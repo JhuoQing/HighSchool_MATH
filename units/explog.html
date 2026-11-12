@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>指數與對數｜高中數學視覺實驗室</title>
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="../js/common.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, katexOpt)"></script>
+</head>
+<body>
+<main class="page">
+  <h1>🚀 指數與對數</h1>
+  <p class="subtitle">指數與對數是同一件事的兩面 —— 它們的圖形對 $y = x$ 鏡射對稱。</p>
+
+  <div class="section">
+    <h2>實驗一：指數與對數互為鏡像</h2>
+    <p>調整底數 $a$，同時觀察 $y = a^x$（藍）與 $y = \log_a x$（橘）。兩條曲線永遠對虛線 $y=x$ 對稱，因為對數就是指數的<b>反函數</b>：</p>
+    <div class="lab">
+      <canvas id="c1"></canvas>
+      <div class="controls">
+        <div class="ctrl"><label for="s-base">底數 a <b></b></label><input type="range" id="s-base" min="0.2" max="4" step="0.05" value="2"></div>
+      </div>
+      <div class="readout" id="r1"></div>
+    </div>
+    <div class="note">試著把 $a$ 拉到小於 1（例如 0.5）——兩條曲線都變成「遞減」。$a=1$ 附近會發生什麼事？為什麼底數不能等於 1？</div>
+  </div>
+
+  <div class="section">
+    <h2>實驗二：指數成長 vs. 其他成長</h2>
+    <p>「指數成長」到底有多誇張？比較 $y = 2^x$、$y = x^2$、$y = 10x$。前段看起來差不多，把視野拉遠之後……</p>
+    <div class="lab">
+      <canvas id="c2"></canvas>
+      <div class="controls">
+        <div class="ctrl" style="flex:2"><label for="s-zoom">視野範圍 x ∈ [0, <b></b>]</label><input type="range" id="s-zoom" min="5" max="30" step="1" value="6"></div>
+      </div>
+      <div class="readout">藍：$2^x$（指數）　橘：$x^2$（多項式）　綠：$10x$（線性）</div>
+    </div>
+    <div class="note">x = 30 時：$10x = 300$、$x^2 = 900$，而 $2^x$ 已超過 <b>10 億</b>。這就是病毒傳播、複利為什麼可怕的原因。</div>
+  </div>
+
+  <div class="section">
+    <h2>關鍵公式</h2>
+    <div class="formulas">
+      <div class="formula"><div class="name">指數律</div><div class="math">$$a^m \cdot a^n = a^{m+n},\quad (a^m)^n = a^{mn},\quad a^{-n} = \tfrac{1}{a^n}$$</div></div>
+      <div class="formula"><div class="name">對數定義</div><div class="math">$$a^x = b \iff x = \log_a b \quad (a>0,\, a\neq 1,\, b>0)$$</div></div>
+      <div class="formula"><div class="name">對數律</div><div class="math">$$\log xy = \log x + \log y,\quad \log \tfrac{x}{y} = \log x - \log y,\quad \log x^n = n\log x$$</div></div>
+      <div class="formula"><div class="name">換底公式</div><div class="math">$$\log_a b = \frac{\log_c b}{\log_c a}$$</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>小測驗</h2>
+    <div id="quiz"></div>
+  </div>
+
+  <div class="unit-nav"><a href="polynomial.html">← 多項式函數</a><a href="linecircle.html">下一單元：直線與圓 →</a></div>
+</main>
+<footer>高中數學視覺實驗室</footer>
+
+<script>
+injectNav(true);
+
+// 實驗一：互為反函數
+const p1 = new Plot(document.getElementById("c1"), { xmin:-5, xmax:7, ymin:-4, ymax:6, heightPx:400 });
+let base = 2;
+p1.redraw = () => {
+  p1.clear(); p1.grid(1); p1.axes(2);
+  p1.fn(x => x, cssVar("--text-dim"), 1.5, [6,6]);   // y = x
+  if (Math.abs(base - 1) > 0.02) {
+    p1.fn(x => Math.pow(base, x), cssVar("--curve1"), 3);
+    p1.fn(x => x > 0 ? Math.log(x)/Math.log(base) : NaN, cssVar("--curve2"), 3);
+  }
+  p1.point(0, 1, cssVar("--curve1"), 5, "(0,1)");
+  p1.point(1, 0, cssVar("--curve2"), 5, "(1,0)", 10, 14);
+  document.getElementById("r1").innerHTML =
+    Math.abs(base-1) <= 0.02
+      ? `a = 1 時 $1^x$ 恆等於 1，不是一對一函數 → 沒有反函數，所以底數不能是 1！`
+      : `a = <b>${base.toFixed(2)}</b> ｜ 藍線必過 (0, 1)，橘線必過 (1, 0)`;
+  if (window.renderMathInElement) renderMathInElement(document.getElementById("r1"), katexOpt);
+};
+bindSlider("s-base", v => { base = v; p1.redraw(); }, v=>v.toFixed(2));
+
+// 實驗二：成長比較
+const p2 = new Plot(document.getElementById("c2"), { xmin:0, xmax:6, ymin:0, ymax:70, heightPx:400 });
+p2.redraw = () => {
+  p2.clear();
+  const xm = p2.xmax;
+  p2.grid(xm/6 >= 2 ? Math.ceil(xm/6) : 1);
+  p2.axes(Math.max(1, Math.round(xm/6)));
+  p2.fn(x => 10*x, cssVar("--curve3"), 2.5);
+  p2.fn(x => x*x, cssVar("--curve2"), 2.5);
+  p2.fn(x => Math.pow(2, x), cssVar("--curve1"), 3);
+};
+bindSlider("s-zoom", v => {
+  p2.xmax = v;
+  p2.ymax = Math.min(Math.pow(2, v) * 1.1, 1.2e9);
+  p2.redraw();
+}, v=>v.toFixed(0));
+
+// 測驗
+renderQuiz("quiz", [
+  { q:"$\\log_2 8 = ?$",
+    opts:["$2$","$3$","$4$","$8$"], ans:1,
+    expl:"問的是「2 的幾次方是 8？」$2^3 = 8$，所以答案是 3。對數就是在問指數。" },
+  { q:"函數 $y = a^x$（$a>1$）的圖形一定通過哪一點？",
+    opts:["$(1, 0)$","$(0, 0)$","$(0, 1)$","$(a, 1)$"], ans:2,
+    expl:"任何數的 0 次方都是 1，所以 $a^0 = 1$，圖形必過 $(0,1)$ —— 實驗一中藍線永遠穿過這一點。" },
+  { q:"已知 $\\log 2 \\approx 0.301$，則 $\\log 5$ 約為？",
+    opts:["$0.5$","$0.602$","$0.699$","$0.750$"], ans:2,
+    expl:"$\\log 5 = \\log\\frac{10}{2} = \\log 10 - \\log 2 = 1 - 0.301 = 0.699$。對數律把除法變成減法！" },
+], "explog");
+</script>
+</body>
+</html>

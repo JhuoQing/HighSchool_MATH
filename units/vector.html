@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>平面向量｜高中數學視覺實驗室</title>
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="../js/common.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, katexOpt)"></script>
+</head>
+<body>
+<main class="page">
+  <h1>➡️ 平面向量</h1>
+  <p class="subtitle">向量是「有方向的量」—— 拖曳箭頭，幾何意義立刻現形。</p>
+
+  <div class="section">
+    <h2>實驗一：向量加法（平行四邊形法則）</h2>
+    <p><b>拖曳 $\vec{u}$（藍）與 $\vec{v}$（橘）的箭頭端點</b>，紅色箭頭是 $\vec{u}+\vec{v}$，灰色虛線構成平行四邊形：</p>
+    <div class="lab">
+      <canvas id="c1"></canvas>
+      <div class="readout" id="r1"></div>
+    </div>
+    <div class="note">向量加法就是「位移接力」：先走 $\vec{u}$ 再走 $\vec{v}$，等於直接走對角線 $\vec{u}+\vec{v}$。分量各自相加即可。</div>
+  </div>
+
+  <div class="section">
+    <h2>實驗二：內積與投影</h2>
+    <p>內積 $\vec{u}\cdot\vec{v} = |\vec{u}||\vec{v}|\cos\theta$ 的幾何意義：$\vec{u}$ 在 $\vec{v}$ 上的<b>影子長度</b>乘以 $|\vec{v}|$。拖曳箭頭，特別觀察<b>夾角超過 90° 時內積變負</b>：</p>
+    <div class="lab">
+      <canvas id="c2"></canvas>
+      <div class="readout" id="r2"></div>
+    </div>
+    <div class="note">內積 = 0 ⟺ 兩向量互相垂直。試著把夾角拖到接近 90°，看內積數值逼近 0！</div>
+  </div>
+
+  <div class="section">
+    <h2>關鍵公式</h2>
+    <div class="formulas">
+      <div class="formula"><div class="name">分量運算</div><div class="math">$$\vec{u}\pm\vec{v} = (u_1\pm v_1,\, u_2\pm v_2),\quad |\vec{u}| = \sqrt{u_1^2+u_2^2}$$</div></div>
+      <div class="formula"><div class="name">內積（兩種算法）</div><div class="math">$$\vec{u}\cdot\vec{v} = u_1v_1 + u_2v_2 = |\vec{u}||\vec{v}|\cos\theta$$</div></div>
+      <div class="formula"><div class="name">正射影</div><div class="math">$$\text{proj}_{\vec{v}}\,\vec{u} = \frac{\vec{u}\cdot\vec{v}}{|\vec{v}|^2}\,\vec{v}$$</div></div>
+      <div class="formula"><div class="name">垂直與平行</div><div class="math">$$\vec{u}\perp\vec{v} \iff \vec{u}\cdot\vec{v}=0,\qquad \vec{u}\parallel\vec{v} \iff u_1v_2 = u_2v_1$$</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>小測驗</h2>
+    <div id="quiz"></div>
+  </div>
+
+  <div class="unit-nav"><a href="trig.html">← 三角函數</a><a href="conics.html">下一單元：圓錐曲線 →</a></div>
+</main>
+<footer>高中數學視覺實驗室</footer>
+
+<script>
+injectNav(true);
+
+// 實驗一：向量加法
+const p1 = new Plot(document.getElementById("c1"), { xmin:-2, xmax:10, ymin:-2, ymax:7, heightPx:380 });
+let U = [3, 1], V = [1.5, 3];
+p1.redraw = () => {
+  p1.clear(); p1.grid(1); p1.axes(2);
+  const S = [U[0]+V[0], U[1]+V[1]];
+  // 平行四邊形虛線
+  p1.line(U[0], U[1], S[0], S[1], cssVar("--text-dim"), 1.5, [5,5]);
+  p1.line(V[0], V[1], S[0], S[1], cssVar("--text-dim"), 1.5, [5,5]);
+  p1.arrow(0, 0, U[0], U[1], cssVar("--curve1"), 3, "u");
+  p1.arrow(0, 0, V[0], V[1], cssVar("--curve2"), 3, "v");
+  p1.arrow(0, 0, S[0], S[1], cssVar("--curve4"), 3, "u+v");
+  document.getElementById("r1").innerHTML =
+    `u = (${U[0].toFixed(1)}, ${U[1].toFixed(1)})　v = (${V[0].toFixed(1)}, ${V[1].toFixed(1)})　u+v = (<b>${S[0].toFixed(1)}</b>, <b>${S[1].toFixed(1)}</b>)`;
+};
+p1.draggable([
+  { get:()=>U, set:(x,y)=>{ U=[x,y]; } },
+  { get:()=>V, set:(x,y)=>{ V=[x,y]; } },
+], () => p1.redraw());
+p1.redraw();
+
+// 實驗二：內積與投影
+const p2 = new Plot(document.getElementById("c2"), { xmin:-6, xmax:8, ymin:-4, ymax:6, heightPx:400 });
+let U2 = [2, 4], V2 = [5, 1];
+p2.redraw = () => {
+  p2.clear(); p2.grid(1); p2.axes(2);
+  const dot = U2[0]*V2[0] + U2[1]*V2[1];
+  const lu = Math.hypot(...U2), lv = Math.hypot(...V2);
+  const cosT = dot / (lu*lv || 1);
+  const ang = Math.acos(Math.max(-1, Math.min(1, cosT))) * 180 / Math.PI;
+  // 投影向量
+  const k = dot / (lv*lv || 1);
+  const P = [k*V2[0], k*V2[1]];
+  // v 的延長線（投影落在其上）
+  p2.line(-V2[0]*2, -V2[1]*2, V2[0]*2, V2[1]*2, cssVar("--text-dim"), 1, [4,6]);
+  p2.arrow(0, 0, V2[0], V2[1], cssVar("--curve2"), 3, "v");
+  p2.arrow(0, 0, U2[0], U2[1], cssVar("--curve1"), 3, "u");
+  // 投影虛線與投影向量
+  p2.line(U2[0], U2[1], P[0], P[1], cssVar("--curve4"), 1.5, [5,5]);
+  p2.arrow(0, 0, P[0], P[1], cssVar("--curve3"), 3.5, "proj");
+  const col = dot > 0.05 ? "var(--ok)" : dot < -0.05 ? "var(--err)" : "var(--warn)";
+  document.getElementById("r2").innerHTML =
+    `u·v = <b style="color:${col}">${dot.toFixed(2)}</b>　夾角 θ ≈ <b>${ang.toFixed(1)}°</b>　${dot < -0.05 ? "夾角 > 90°，影子落在反方向 → 內積為負" : dot > 0.05 ? "夾角 < 90° → 內積為正" : "幾乎垂直 → 內積 ≈ 0"}`;
+};
+p2.draggable([
+  { get:()=>U2, set:(x,y)=>{ U2=[x,y]; } },
+  { get:()=>V2, set:(x,y)=>{ V2=[x,y]; } },
+], () => p2.redraw());
+p2.redraw();
+
+// 測驗
+renderQuiz("quiz", [
+  { q:"$\\vec{u}=(2,3)$、$\\vec{v}=(-1,4)$，則 $\\vec{u}+\\vec{v} = ?$",
+    opts:["$(1, 7)$","$(3, -1)$","$(-2, 12)$","$(1, -1)$"], ans:0,
+    expl:"分量各自相加：$(2+(-1),\\, 3+4) = (1, 7)$。" },
+  { q:"$\\vec{u}=(3,1)$、$\\vec{v}=(2,-6)$，兩向量的關係是？",
+    opts:["平行","垂直","夾角 45°","夾角 60°"], ans:1,
+    expl:"內積 $= 3\\cdot2 + 1\\cdot(-6) = 6 - 6 = 0$，內積為零即垂直。" },
+  { q:"若 $\\vec{u}\\cdot\\vec{v} < 0$，則兩向量的夾角 θ 滿足？",
+    opts:["$\\theta < 90°$","$\\theta = 90°$","$90° < \\theta \\le 180°$","無法判斷"], ans:2,
+    expl:"$\\cos\\theta < 0$ 表示夾角是鈍角 —— 實驗二中把兩箭頭拖到「背對背」就會看到內積轉負。" },
+], "vector");
+</script>
+</body>
+</html>

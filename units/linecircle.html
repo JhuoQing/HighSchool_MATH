@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>直線與圓｜高中數學視覺實驗室</title>
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="../js/common.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, katexOpt)"></script>
+</head>
+<body>
+<main class="page">
+  <h1>⭕ 直線與圓</h1>
+  <p class="subtitle">座標幾何的起點：用數字描述直線的傾斜、圓的位置。</p>
+
+  <div class="section">
+    <h2>實驗一：拖曳兩點，看斜率與方程式</h2>
+    <p>直接用手指或滑鼠<b>拖曳 A、B 兩點</b>，觀察斜率 $m = \dfrac{y_2 - y_1}{x_2 - x_1}$ 和直線方程式如何變化：</p>
+    <div class="lab">
+      <canvas id="c1"></canvas>
+      <div class="readout" id="r1"></div>
+    </div>
+    <div class="note">把 A、B 拉成同樣的 $x$ 座標 —— 直線變成鉛直線，斜率「不存在」。這就是為什麼斜率公式要求 $x_1 \neq x_2$。</div>
+  </div>
+
+  <div class="section">
+    <h2>實驗二：直線與圓的三種位置關係</h2>
+    <p>固定圓 $x^2 + y^2 = 9$（半徑 $r=3$），移動水平線 $y = k$。比較<b>圓心到直線的距離 $d$</b> 與<b>半徑 $r$</b>：</p>
+    <div class="lab">
+      <canvas id="c2"></canvas>
+      <div class="controls">
+        <div class="ctrl" style="flex:2"><label for="s-k">直線 y = k <b></b></label><input type="range" id="s-k" min="-5" max="5" step="0.05" value="1.5"></div>
+      </div>
+      <div class="readout" id="r2"></div>
+    </div>
+    <div class="note">判斷口訣：$d &lt; r$ 相交（兩點）、$d = r$ 相切（一點）、$d &gt; r$ 相離（零點）。拉到 $k = \pm 3$ 時直線剛好「切」到圓！</div>
+  </div>
+
+  <div class="section">
+    <h2>關鍵公式</h2>
+    <div class="formulas">
+      <div class="formula"><div class="name">兩點斜率與點斜式</div><div class="math">$$m = \frac{y_2-y_1}{x_2-x_1},\qquad y - y_1 = m(x - x_1)$$</div></div>
+      <div class="formula"><div class="name">點到直線距離</div><div class="math">$$d = \frac{|ax_0 + by_0 + c|}{\sqrt{a^2+b^2}}$$</div></div>
+      <div class="formula"><div class="name">圓的標準式</div><div class="math">$$(x-h)^2 + (y-k)^2 = r^2$$</div></div>
+      <div class="formula"><div class="name">直線與圓位置關係</div><div class="math">$$d<r \text{ 交兩點},\quad d=r \text{ 相切},\quad d>r \text{ 相離}$$</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>小測驗</h2>
+    <div id="quiz"></div>
+  </div>
+
+  <div class="unit-nav"><a href="explog.html">← 指數與對數</a><a href="trig.html">下一單元：三角函數 →</a></div>
+</main>
+<footer>高中數學視覺實驗室</footer>
+
+<script>
+injectNav(true);
+
+// 實驗一：拖曳兩點
+const p1 = new Plot(document.getElementById("c1"), { xmin:-8, xmax:8, ymin:-5, ymax:5, heightPx:380 });
+let Ax=-3, Ay=-1, Bx=2, By=3;
+p1.redraw = () => {
+  p1.clear(); p1.grid(1); p1.axes(2);
+  const dx = Bx - Ax, dy = By - Ay;
+  let eq, slopeTxt;
+  if (Math.abs(dx) < 0.08) {
+    p1.line(Ax, p1.ymin, Ax, p1.ymax, cssVar("--curve1"), 2.5);
+    slopeTxt = "不存在（鉛直線）"; eq = `x = ${Ax.toFixed(1)}`;
+  } else {
+    const m = dy/dx, b = Ay - m*Ax;
+    p1.fnLineSeg(x => m*x + b, cssVar("--curve1"), 2.5);
+    slopeTxt = (m).toFixed(2); eq = `y = ${m.toFixed(2)}x ${b>=0?"+":"−"} ${Math.abs(b).toFixed(2)}`;
+    // 斜率三角形
+    p1.line(Ax, Ay, Bx, Ay, cssVar("--warn"), 1.5, [4,4]);
+    p1.line(Bx, Ay, Bx, By, cssVar("--warn"), 1.5, [4,4]);
+  }
+  p1.point(Ax, Ay, cssVar("--curve4"), 7, "A");
+  p1.point(Bx, By, cssVar("--curve3"), 7, "B");
+  document.getElementById("r1").innerHTML =
+    `A(${Ax.toFixed(1)}, ${Ay.toFixed(1)})　B(${Bx.toFixed(1)}, ${By.toFixed(1)})　斜率 m = <b>${slopeTxt}</b>　方程式：<b>${eq}</b>`;
+};
+p1.draggable([
+  { get:()=>[Ax,Ay], set:(x,y)=>{ Ax=x; Ay=y; } },
+  { get:()=>[Bx,By], set:(x,y)=>{ Bx=x; By=y; } },
+], () => p1.redraw());
+p1.redraw();
+
+// 實驗二：直線與圓
+const p2 = new Plot(document.getElementById("c2"), { xmin:-6.5, xmax:6.5, ymin:-5, ymax:5, heightPx:400 });
+let kLine = 1.5;
+p2.redraw = () => {
+  p2.clear(); p2.grid(1); p2.axes(2);
+  p2.circle(0, 0, 3, cssVar("--curve1"), 3);
+  p2.point(0, 0, cssVar("--axis"), 4, "O");
+  const d = Math.abs(kLine), r = 3;
+  let rel, color;
+  if (d < r - 0.03) { rel = "相交（兩個交點）"; color = cssVar("--ok"); }
+  else if (Math.abs(d - r) <= 0.03) { rel = "相切（一個交點）✨"; color = cssVar("--warn"); }
+  else { rel = "相離（沒有交點）"; color = cssVar("--err"); }
+  p2.line(p2.xmin, kLine, p2.xmax, kLine, color, 2.5);
+  if (d < r) {
+    const x = Math.sqrt(r*r - kLine*kLine);
+    p2.point(x, kLine, color, 6); p2.point(-x, kLine, color, 6);
+  } else if (Math.abs(d - r) <= 0.03) {
+    p2.point(0, Math.sign(kLine)*r, color, 7);
+  }
+  p2.line(0, 0, 0, kLine, cssVar("--curve4"), 2, [5,5]);
+  document.getElementById("r2").innerHTML =
+    `d = |k| = <b>${d.toFixed(2)}</b>，r = <b>3</b> → <b style="color:${color}">${rel}</b>`;
+};
+bindSlider("s-k", v => { kLine = v; p2.redraw(); }, v=>v.toFixed(2));
+
+// 測驗
+renderQuiz("quiz", [
+  { q:"通過 $(1, 2)$ 與 $(3, 6)$ 的直線斜率是？",
+    opts:["$\\frac{1}{2}$","$2$","$4$","$-2$"], ans:1,
+    expl:"$m = \\dfrac{6-2}{3-1} = \\dfrac{4}{2} = 2$。" },
+  { q:"圓 $(x-1)^2 + (y+2)^2 = 25$ 的圓心與半徑是？",
+    opts:["圓心 $(1,-2)$、$r=5$","圓心 $(-1,2)$、$r=5$","圓心 $(1,-2)$、$r=25$","圓心 $(-1,2)$、$r=25$"], ans:0,
+    expl:"標準式 $(x-h)^2+(y-k)^2=r^2$：$h=1$、$k=-2$、$r=\\sqrt{25}=5$。注意符號是「減」！" },
+  { q:"圓心到某直線的距離為 4，圓半徑為 4，則直線與圓？",
+    opts:["相交於兩點","相切","相離","重合"], ans:1,
+    expl:"$d = r$ 時直線恰好碰到圓一點，即相切 —— 實驗二把 $k$ 拉到 $\\pm 3$ 的情況。" },
+], "linecircle");
+</script>
+</body>
+</html>

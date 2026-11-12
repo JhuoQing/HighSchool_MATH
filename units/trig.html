@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>三角函數｜高中數學視覺實驗室</title>
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="../js/common.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, katexOpt)"></script>
+</head>
+<body>
+<main class="page">
+  <h1>🌊 三角函數</h1>
+  <p class="subtitle">正弦波不是憑空出現的 —— 它是單位圓上一點旋轉時「高度」的紀錄。</p>
+
+  <div class="section">
+    <h2>實驗一：單位圓 → 正弦波</h2>
+    <p>按下播放：點 P 沿單位圓旋轉，它的 $y$ 座標（紅色虛線的高度）隨時間被「攤開」畫在右邊 —— 這條軌跡就是 $\sin\theta$：</p>
+    <div class="lab">
+      <canvas id="c1"></canvas>
+      <div class="btn-row">
+        <button class="btn primary" id="btn-play">▶ 播放</button>
+        <button class="btn" id="btn-reset">↺ 重設</button>
+        <span class="readout" id="r1" style="margin-top:0"></span>
+      </div>
+    </div>
+    <div class="note">$\cos\theta$ 是什麼？就是同一個點 P 的 <b>$x$ 座標</b>。所以 $\sin^2\theta + \cos^2\theta = 1$ 其實只是「P 在單位圓上」（距離原點 1）的另一種說法！</div>
+  </div>
+
+  <div class="section">
+    <h2>實驗二：振幅、週期、相位</h2>
+    <p>一般正弦函數 $y = A\sin(\omega x + \varphi)$ 有三個旋鈕。拉動滑桿，找出每個參數在圖上做什麼：</p>
+    <div class="lab">
+      <canvas id="c2"></canvas>
+      <div class="controls">
+        <div class="ctrl"><label for="s-A">振幅 A <b></b></label><input type="range" id="s-A" min="0.2" max="3" step="0.1" value="1"></div>
+        <div class="ctrl"><label for="s-w">角頻率 ω <b></b></label><input type="range" id="s-w" min="0.5" max="4" step="0.1" value="1"></div>
+        <div class="ctrl"><label for="s-phi">相位 φ <b></b></label><input type="range" id="s-phi" min="-3.14" max="3.14" step="0.05" value="0"></div>
+      </div>
+      <div class="readout" id="r2"></div>
+    </div>
+    <div class="note">週期 $T = \dfrac{2\pi}{\omega}$：$\omega$ 越大波越「擠」。$\varphi &gt; 0$ 時圖形<b>向左</b>平移 —— 和直覺相反，值得親手驗證！</div>
+  </div>
+
+  <div class="section">
+    <h2>關鍵公式</h2>
+    <div class="formulas">
+      <div class="formula"><div class="name">平方關係</div><div class="math">$$\sin^2\theta + \cos^2\theta = 1$$</div></div>
+      <div class="formula"><div class="name">和角公式</div><div class="math">$$\sin(\alpha\pm\beta) = \sin\alpha\cos\beta \pm \cos\alpha\sin\beta$$</div></div>
+      <div class="formula"><div class="name">正弦定理</div><div class="math">$$\frac{a}{\sin A} = \frac{b}{\sin B} = \frac{c}{\sin C} = 2R$$</div></div>
+      <div class="formula"><div class="name">餘弦定理</div><div class="math">$$c^2 = a^2 + b^2 - 2ab\cos C$$</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>小測驗</h2>
+    <div id="quiz"></div>
+  </div>
+
+  <div class="unit-nav"><a href="linecircle.html">← 直線與圓</a><a href="vector.html">下一單元：平面向量 →</a></div>
+</main>
+<footer>高中數學視覺實驗室</footer>
+
+<script>
+injectNav(true);
+
+// 實驗一：單位圓動畫（左圓右波）
+const p1 = new Plot(document.getElementById("c1"), { xmin:-1.8, xmax:11, ymin:-1.6, ymax:1.6, heightPx:340 });
+let theta = 0, playing = false, lastT = 0;
+p1.redraw = () => {
+  p1.clear();
+  // 波形區格線
+  p1.grid(Math.PI/2 > 1 ? 1 : 1);
+  p1.axes(2);
+  // 單位圓（圓心在 x=0）
+  p1.circle(0, 0, 1, cssVar("--curve1"), 2.5);
+  const px = Math.cos(theta), py = Math.sin(theta);
+  // 旋轉半徑
+  p1.line(0, 0, px, py, cssVar("--text-dim"), 1.5);
+  // 已畫出的 sin 軌跡（從 x=0.?? 開始攤開：波形畫在 x ∈ [1.6, 1.6+θ]）
+  const x0 = 1.8;
+  p1.param(t => x0 + t, t => Math.sin(t), 0, Math.max(theta, 0.001), cssVar("--curve2"), 3);
+  // 水平連線：P 的高度 → 波上的點
+  p1.line(px, py, x0 + theta, py, cssVar("--curve4"), 1.5, [5,5]);
+  p1.point(px, py, cssVar("--curve1"), 6, "P");
+  p1.point(x0 + theta, py, cssVar("--curve2"), 6);
+  document.getElementById("r1").innerHTML =
+    `θ = <b>${theta.toFixed(2)}</b> rad ｜ sin θ = <b>${py.toFixed(3)}</b> ｜ cos θ = <b>${px.toFixed(3)}</b>`;
+};
+function tick(t) {
+  if (!playing) return;
+  if (lastT) theta = Math.min(theta + (t - lastT) / 1000 * 1.2, 9);
+  lastT = t;
+  p1.redraw();
+  if (theta >= 9) { playing = false; document.getElementById("btn-play").textContent = "▶ 播放"; return; }
+  requestAnimationFrame(tick);
+}
+document.getElementById("btn-play").onclick = (e) => {
+  playing = !playing;
+  e.target.textContent = playing ? "⏸ 暫停" : "▶ 播放";
+  lastT = 0;
+  if (playing) requestAnimationFrame(tick);
+};
+document.getElementById("btn-reset").onclick = () => { theta = 0; p1.redraw(); };
+p1.redraw();
+
+// 實驗二：A sin(ωx + φ)
+const p2 = new Plot(document.getElementById("c2"), { xmin:-6.5, xmax:6.5, ymin:-3.5, ymax:3.5, heightPx:360 });
+let A2=1, W2=1, PHI=0;
+p2.redraw = () => {
+  p2.clear(); p2.grid(1); p2.axes(2);
+  p2.fn(x => Math.sin(x), cssVar("--text-dim"), 1.5, [6,6]);  // 基準 sin x
+  p2.fn(x => A2 * Math.sin(W2 * x + PHI), cssVar("--curve1"), 3);
+  const T = 2*Math.PI/W2;
+  document.getElementById("r2").innerHTML =
+    `y = <b>${A2.toFixed(1)}</b> sin(<b>${W2.toFixed(1)}</b>x ${PHI>=0?"+":"−"} <b>${Math.abs(PHI).toFixed(2)}</b>) ｜ 週期 T = 2π/ω = <b>${T.toFixed(2)}</b> ｜ 虛線為 y = sin x`;
+};
+bindSlider("s-A", v => { A2=v; p2.redraw(); }, v=>v.toFixed(1));
+bindSlider("s-w", v => { W2=v; p2.redraw(); }, v=>v.toFixed(1));
+bindSlider("s-phi", v => { PHI=v; p2.redraw(); }, v=>v.toFixed(2));
+
+// 測驗
+renderQuiz("quiz", [
+  { q:"$\\sin 150° = ?$",
+    opts:["$\\frac{1}{2}$","$-\\frac{1}{2}$","$\\frac{\\sqrt{3}}{2}$","$-\\frac{\\sqrt{3}}{2}$"], ans:0,
+    expl:"150° 在第二象限，$\\sin$ 為正；參考角 30°，所以 $\\sin 150° = \\sin 30° = \\frac{1}{2}$。想像單位圓上的點：高度和 30° 時一樣！" },
+  { q:"函數 $y = 3\\sin(2x)$ 的振幅與週期分別是？",
+    opts:["振幅 3、週期 $\\pi$","振幅 2、週期 $3$","振幅 3、週期 $2\\pi$","振幅 $\\frac{3}{2}$、週期 $\\pi$"], ans:0,
+    expl:"振幅 $= |A| = 3$；週期 $T = \\frac{2\\pi}{\\omega} = \\frac{2\\pi}{2} = \\pi$。可以在實驗二把 A 拉到 3、ω 拉到 2 驗證。" },
+  { q:"三角形兩邊 $a=3$、$b=5$，夾角 $C=60°$，第三邊 $c$ 是？",
+    opts:["$\\sqrt{19}$","$4$","$\\sqrt{34}$","$7$"], ans:0,
+    expl:"餘弦定理：$c^2 = 9 + 25 - 2\\cdot3\\cdot5\\cos 60° = 34 - 15 = 19$，故 $c = \\sqrt{19}$。" },
+], "trig");
+</script>
+</body>
+</html>

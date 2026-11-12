@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>排列組合與機率｜高中數學視覺實驗室</title>
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="../js/common.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, katexOpt)"></script>
+</head>
+<body>
+<main class="page">
+  <h1>🎲 排列組合與機率</h1>
+  <p class="subtitle">機率是「長期頻率的預言」—— 用幾萬次模擬親眼驗證它。</p>
+
+  <div class="section">
+    <h2>實驗一：兩顆骰子的點數和</h2>
+    <p>擲兩顆骰子，點數和哪個最常出現？理論說是 7（有 6 種組合）。按按鈕累積模擬，看直方圖（實心）會不會貼近理論機率（橫線）：</p>
+    <div class="lab">
+      <canvas id="c1"></canvas>
+      <div class="btn-row">
+        <button class="btn primary" id="btn-100">擲 100 次</button>
+        <button class="btn primary" id="btn-5000">擲 5000 次</button>
+        <button class="btn" id="btn-clear">清除</button>
+        <span class="readout" id="r1" style="margin-top:0">尚未擲骰</span>
+      </div>
+    </div>
+    <div class="note">次數少時長條忽高忽低；擲到幾萬次後，每根長條都穩穩靠近理論值 —— 這就是<b>大數法則</b>。</div>
+  </div>
+
+  <div class="section">
+    <h2>實驗二：擲硬幣的正面比例</h2>
+    <p>公平硬幣正面機率是 0.5，但「前 10 次」可能偏得很誇張。看看正面比例如何隨次數收斂到 0.5：</p>
+    <div class="lab">
+      <canvas id="c2"></canvas>
+      <div class="btn-row">
+        <button class="btn primary" id="btn-coin">重新模擬 2000 次</button>
+        <span class="readout" id="r2" style="margin-top:0"></span>
+      </div>
+    </div>
+    <div class="note">注意：收斂的是「比例」，不是「正反面次數差」。連續出現 5 次正面後，下一次正面機率仍是 0.5 —— 硬幣沒有記憶！</div>
+  </div>
+
+  <div class="section">
+    <h2>關鍵公式</h2>
+    <div class="formulas">
+      <div class="formula"><div class="name">排列與組合</div><div class="math">$$P^n_k = \frac{n!}{(n-k)!},\qquad C^n_k = \frac{n!}{k!\,(n-k)!}$$</div></div>
+      <div class="formula"><div class="name">古典機率</div><div class="math">$$P(A) = \frac{\text{事件 } A \text{ 的樣本點數}}{\text{全部樣本點數}}$$</div></div>
+      <div class="formula"><div class="name">條件機率</div><div class="math">$$P(A \mid B) = \frac{P(A \cap B)}{P(B)}$$</div></div>
+      <div class="formula"><div class="name">期望值</div><div class="math">$$E(X) = \sum x_i \, p_i$$</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>小測驗</h2>
+    <div id="quiz"></div>
+  </div>
+
+  <div class="unit-nav"><a href="conics.html">← 圓錐曲線</a><a href="statistics.html">下一單元：數據分析 →</a></div>
+</main>
+<footer>高中數學視覺實驗室</footer>
+
+<script>
+injectNav(true);
+
+// 實驗一：骰子和直方圖
+const p1 = new Plot(document.getElementById("c1"), { xmin:1, xmax:13.5, ymin:0, ymax:0.24, heightPx:380 });
+let counts = new Array(13).fill(0), total = 0;
+const theo = [0,0,1,2,3,4,5,6,5,4,3,2,1].map(v => v/36);
+p1.redraw = () => {
+  p1.clear();
+  const c = p1.ctx;
+  // y 軸格線
+  for (let y = 0.05; y <= 0.22; y += 0.05) {
+    c.strokeStyle = cssVar("--grid"); c.lineWidth = 1;
+    c.beginPath(); c.moveTo(0, p1.py(y)); c.lineTo(p1.W, p1.py(y)); c.stroke();
+    c.fillStyle = cssVar("--axis"); c.font = "11px monospace"; c.textAlign = "left";
+    c.fillText(y.toFixed(2), 4, p1.py(y) - 4);
+  }
+  for (let s = 2; s <= 12; s++) {
+    const freq = total ? counts[s]/total : 0;
+    const x0 = p1.px(s - 0.38), x1 = p1.px(s + 0.38);
+    // 模擬長條
+    c.fillStyle = cssVar("--curve1");
+    c.globalAlpha = 0.85;
+    c.fillRect(x0, p1.py(freq), x1 - x0, p1.py(0) - p1.py(freq));
+    c.globalAlpha = 1;
+    // 理論橫線
+    c.strokeStyle = cssVar("--curve2"); c.lineWidth = 3;
+    c.beginPath(); c.moveTo(x0, p1.py(theo[s])); c.lineTo(x1, p1.py(theo[s])); c.stroke();
+    // 標籤
+    c.fillStyle = cssVar("--text"); c.font = "12px monospace"; c.textAlign = "center";
+    c.fillText(s, (x0+x1)/2, p1.py(0) + 14);
+  }
+};
+function roll(n) {
+  for (let i = 0; i < n; i++) {
+    const s = (1+Math.floor(Math.random()*6)) + (1+Math.floor(Math.random()*6));
+    counts[s]++; total++;
+  }
+  document.getElementById("r1").innerHTML = `已擲 <b>${total.toLocaleString()}</b> 次 ｜ 「7」出現比例 <b>${total ? (counts[7]/total).toFixed(4) : 0}</b>（理論 ${ (6/36).toFixed(4)}）`;
+  p1.redraw();
+}
+document.getElementById("btn-100").onclick = () => roll(100);
+document.getElementById("btn-5000").onclick = () => roll(5000);
+document.getElementById("btn-clear").onclick = () => { counts.fill(0); total = 0; document.getElementById("r1").textContent = "尚未擲骰"; p1.redraw(); };
+p1.redraw();
+
+// 實驗二：硬幣收斂
+const p2 = new Plot(document.getElementById("c2"), { xmin:0, xmax:2000, ymin:0, ymax:1, heightPx:320 });
+let seq = [];
+function coinSim() {
+  seq = []; let heads = 0;
+  for (let i = 1; i <= 2000; i++) {
+    if (Math.random() < 0.5) heads++;
+    seq.push(heads / i);
+  }
+  document.getElementById("r2").innerHTML = `2000 次後正面比例：<b>${seq[1999].toFixed(4)}</b>`;
+  p2.redraw();
+}
+p2.redraw = () => {
+  p2.clear();
+  const c = p2.ctx;
+  c.strokeStyle = cssVar("--grid");
+  [0.25, 0.75].forEach(y => { c.beginPath(); c.moveTo(0,p2.py(y)); c.lineTo(p2.W,p2.py(y)); c.stroke(); });
+  p2.line(0, 0.5, 2000, 0.5, cssVar("--curve2"), 2, [6,4]);
+  p2.text(1850, 0.56, "理論 0.5", cssVar("--curve2"));
+  if (seq.length) {
+    c.strokeStyle = cssVar("--curve1"); c.lineWidth = 2;
+    c.beginPath();
+    seq.forEach((v, i) => { const X = p2.px(i+1), Y = p2.py(v); i ? c.lineTo(X,Y) : c.moveTo(X,Y); });
+    c.stroke();
+  }
+  c.fillStyle = cssVar("--axis"); c.font = "11px monospace"; c.textAlign = "center";
+  [500, 1000, 1500, 2000].forEach(x => c.fillText(x, p2.px(x), p2.py(0) - 8));
+};
+document.getElementById("btn-coin").onclick = coinSim;
+coinSim();
+
+// 測驗
+renderQuiz("quiz", [
+  { q:"從 5 個人中選 2 人組成委員會（不分職位），有幾種選法？",
+    opts:["$20$","$10$","$25$","$5$"], ans:1,
+    expl:"不分順序用組合：$C^5_2 = \\frac{5!}{2!3!} = 10$。若是「選班長和副班長」才用排列 $P^5_2 = 20$。" },
+  { q:"擲兩顆公平骰子，點數和為 7 的機率是？",
+    opts:["$\\frac{1}{6}$","$\\frac{1}{12}$","$\\frac{7}{36}$","$\\frac{1}{7}$"], ans:0,
+    expl:"和為 7 的組合有 (1,6)(2,5)(3,4)(4,3)(5,2)(6,1) 共 6 種，機率 $\\frac{6}{36} = \\frac{1}{6}$ —— 正是實驗一最高的那根長條。" },
+  { q:"連續擲出 4 次正面後，下一次擲出正面的機率是？",
+    opts:["小於 0.5（該出反面了）","大於 0.5（手氣正旺）","仍是 0.5","無法計算"], ans:2,
+    expl:"每次投擲獨立，硬幣沒有記憶。「該出反面了」是著名的賭徒謬誤！" },
+], "probability");
+</script>
+</body>
+</html>

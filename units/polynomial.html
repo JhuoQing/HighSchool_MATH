@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>多項式函數｜高中數學視覺實驗室</title>
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="../js/common.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, katexOpt)"></script>
+</head>
+<body>
+<main class="page">
+  <h1>📈 多項式函數</h1>
+  <p class="subtitle">係數不是一堆符號 —— 每個係數都在圖形上做一件事。</p>
+
+  <div class="section">
+    <h2>實驗一：二次函數的平移與伸縮</h2>
+    <p>頂點式 $y = a(x-h)^2 + k$ 把拋物線的「長相」拆成三個旋鈕：$a$ 控制開口、$h$ 左右平移、$k$ 上下平移。拉拉看：</p>
+    <div class="lab">
+      <canvas id="c1"></canvas>
+      <div class="controls">
+        <div class="ctrl"><label for="s-a">開口 a <b></b></label><input type="range" id="s-a" min="-3" max="3" step="0.1" value="1"></div>
+        <div class="ctrl"><label for="s-h">平移 h <b></b></label><input type="range" id="s-h" min="-5" max="5" step="0.1" value="0"></div>
+        <div class="ctrl"><label for="s-k">平移 k <b></b></label><input type="range" id="s-k" min="-5" max="5" step="0.1" value="0"></div>
+      </div>
+      <div class="readout" id="r1"></div>
+    </div>
+    <div class="note">觀察：$a&gt;0$ 開口向上、$a&lt;0$ 開口向下；$|a|$ 越大開口越窄。頂點永遠在 $(h, k)$。</div>
+  </div>
+
+  <div class="section">
+    <h2>實驗二：三次函數與根的對應</h2>
+    <p>$y = a(x-r_1)(x-r_2)(x-r_3)$ —— 三個根就是曲線與 $x$ 軸的三個交點。拖動滑桿移動根，看曲線怎麼跟著變形：</p>
+    <div class="lab">
+      <canvas id="c2"></canvas>
+      <div class="controls">
+        <div class="ctrl"><label for="s-r1">根 r₁ <b></b></label><input type="range" id="s-r1" min="-5" max="5" step="0.1" value="-3"></div>
+        <div class="ctrl"><label for="s-r2">根 r₂ <b></b></label><input type="range" id="s-r2" min="-5" max="5" step="0.1" value="0"></div>
+        <div class="ctrl"><label for="s-r3">根 r₃ <b></b></label><input type="range" id="s-r3" min="-5" max="5" step="0.1" value="2"></div>
+      </div>
+      <div class="readout" id="r2"></div>
+    </div>
+    <div class="note">把兩個根拉到重合（例如 $r_2 = r_3$），曲線會「碰到 $x$ 軸又彈回來」—— 這就是<b>重根</b>的幾何意義！</div>
+  </div>
+
+  <div class="section">
+    <h2>關鍵公式</h2>
+    <div class="formulas">
+      <div class="formula"><div class="name">二次函數頂點式</div><div class="math">$$y = a(x-h)^2 + k,\quad \text{頂點 } (h,k)$$</div></div>
+      <div class="formula"><div class="name">判別式與根的個數</div><div class="math">$$\Delta = b^2 - 4ac \;\begin{cases} >0 & \text{兩相異實根} \\ =0 & \text{重根} \\ <0 & \text{無實根} \end{cases}$$</div></div>
+      <div class="formula"><div class="name">根與係數（二次）</div><div class="math">$$r_1 + r_2 = -\tfrac{b}{a},\qquad r_1 r_2 = \tfrac{c}{a}$$</div></div>
+      <div class="formula"><div class="name">餘式定理</div><div class="math">$$f(x) \div (x-a) \text{ 的餘式} = f(a)$$</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>小測驗</h2>
+    <div id="quiz"></div>
+  </div>
+
+  <div class="unit-nav"><a href="../index.html">← 回首頁</a><a href="explog.html">下一單元：指數與對數 →</a></div>
+</main>
+<footer>高中數學視覺實驗室</footer>
+
+<script>
+injectNav(true);
+
+// 實驗一
+const p1 = new Plot(document.getElementById("c1"), { xmin:-8, xmax:8, ymin:-6, ymax:8, heightPx:360 });
+let A=1, Hh=0, K=0;
+p1.redraw = () => {
+  p1.clear(); p1.grid(1); p1.axes(2);
+  p1.fn(x => x*x, cssVar("--text-dim"), 1.5, [5,5]);          // 原始 y=x^2
+  p1.fn(x => A*(x-Hh)*(x-Hh)+K, cssVar("--curve1"), 3);
+  p1.point(Hh, K, cssVar("--curve4"), 6, `頂點 (${Hh.toFixed(1)}, ${K.toFixed(1)})`);
+  document.getElementById("r1").innerHTML =
+    `y = <b>${A.toFixed(1)}</b>(x − <b>${Hh.toFixed(1)}</b>)² + <b>${K.toFixed(1)}</b> ｜ 虛線為 y = x²`;
+};
+bindSlider("s-a", v => { A=v; p1.redraw(); }, v=>v.toFixed(1));
+bindSlider("s-h", v => { Hh=v; p1.redraw(); }, v=>v.toFixed(1));
+bindSlider("s-k", v => { K=v; p1.redraw(); }, v=>v.toFixed(1));
+
+// 實驗二
+const p2 = new Plot(document.getElementById("c2"), { xmin:-6, xmax:6, ymin:-10, ymax:10, heightPx:360 });
+let R1=-3, R2=0, R3=2;
+p2.redraw = () => {
+  p2.clear(); p2.grid(1); p2.axes(2);
+  const f = x => 0.5*(x-R1)*(x-R2)*(x-R3);
+  p2.fn(f, cssVar("--curve3"), 3);
+  [R1,R2,R3].forEach(r => p2.point(r, 0, cssVar("--curve4"), 6));
+  const b = -(R1+R2+R3), c = R1*R2+R1*R3+R2*R3, d = -R1*R2*R3;
+  document.getElementById("r2").innerHTML =
+    `展開：y = 0.5(x³ ${b>=0?"+":"−"} ${Math.abs(b).toFixed(1)}x² ${c>=0?"+":"−"} ${Math.abs(c).toFixed(1)}x ${d>=0?"+":"−"} ${Math.abs(d).toFixed(1)})`;
+};
+bindSlider("s-r1", v => { R1=v; p2.redraw(); }, v=>v.toFixed(1));
+bindSlider("s-r2", v => { R2=v; p2.redraw(); }, v=>v.toFixed(1));
+bindSlider("s-r3", v => { R3=v; p2.redraw(); }, v=>v.toFixed(1));
+
+// 測驗
+renderQuiz("quiz", [
+  { q:"拋物線 $y = 2(x-3)^2 + 1$ 的頂點是？",
+    opts:["$(3, 1)$","$(-3, 1)$","$(3, -1)$","$(2, 3)$"], ans:0,
+    expl:"頂點式 $y=a(x-h)^2+k$ 的頂點就是 $(h,k)=(3,1)$。注意括號裡是 $x-3$，所以 $h=3$ 而不是 $-3$。" },
+  { q:"二次方程式 $x^2 - 4x + 4 = 0$ 的圖形與 $x$ 軸有幾個交點？",
+    opts:["0 個","1 個（相切）","2 個","無法判斷"], ans:1,
+    expl:"$\\Delta = 16 - 16 = 0$，有重根 $x=2$，圖形恰好碰到 $x$ 軸一點 —— 就像實驗二把兩根拉到重合的樣子。" },
+  { q:"$f(x) = x^3 - 2x + 5$ 除以 $(x-1)$ 的餘式是？",
+    opts:["$3$","$4$","$5$","$6$"], ans:1,
+    expl:"餘式定理：餘式 $= f(1) = 1 - 2 + 5 = 4$，不需要真的做除法！" },
+], "polynomial");
+</script>
+</body>
+</html>

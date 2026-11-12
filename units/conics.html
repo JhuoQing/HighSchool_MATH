@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>圓錐曲線｜高中數學視覺實驗室</title>
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="../js/common.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, katexOpt)"></script>
+</head>
+<body>
+<main class="page">
+  <h1>🪐 圓錐曲線</h1>
+  <p class="subtitle">橢圓、雙曲線、拋物線都由「距離條件」定義 —— 拖動點 P 親自驗證。</p>
+
+  <div class="section">
+    <h2>實驗：距離定義的現場驗證</h2>
+    <p>選擇曲線類型，然後<b>沿著曲線拖曳點 P</b>，觀察它到兩焦點（或焦點與準線）的距離如何保持定值：</p>
+    <div class="lab">
+      <div class="btn-row" style="margin-top:0; margin-bottom:1rem">
+        <select id="sel-type">
+          <option value="ellipse">橢圓：到兩焦點距離「和」固定</option>
+          <option value="hyperbola">雙曲線：到兩焦點距離「差」固定</option>
+          <option value="parabola">拋物線：到焦點 = 到準線距離</option>
+        </select>
+      </div>
+      <canvas id="c1"></canvas>
+      <div class="controls" id="ctl-c">
+        <div class="ctrl"><label for="s-c">焦距 c <b></b></label><input type="range" id="s-c" min="0.5" max="3.8" step="0.05" value="2.5"></div>
+      </div>
+      <div class="readout" id="r1"></div>
+    </div>
+    <div class="note" id="note1">橢圓：$\overline{PF_1} + \overline{PF_2} = 2a$（定值）。把焦距 $c$ 拉小，兩焦點靠近，橢圓越來越圓 —— $c=0$ 時就變成圓！</div>
+  </div>
+
+  <div class="section">
+    <h2>離心率：一個數字決定形狀</h2>
+    <p>離心率 $e = \dfrac{c}{a}$ 是圓錐曲線的「身分證」：</p>
+    <div class="note">
+      $e = 0$：圓　｜　$0 &lt; e &lt; 1$：橢圓（越接近 1 越扁）　｜　$e = 1$：拋物線　｜　$e &gt; 1$：雙曲線
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>關鍵公式</h2>
+    <div class="formulas">
+      <div class="formula"><div class="name">橢圓標準式（焦點在 x 軸）</div><div class="math">$$\frac{x^2}{a^2} + \frac{y^2}{b^2} = 1,\quad c^2 = a^2 - b^2$$</div></div>
+      <div class="formula"><div class="name">雙曲線標準式</div><div class="math">$$\frac{x^2}{a^2} - \frac{y^2}{b^2} = 1,\quad c^2 = a^2 + b^2,\ \text{漸近線 } y = \pm\tfrac{b}{a}x$$</div></div>
+      <div class="formula"><div class="name">拋物線標準式</div><div class="math">$$y^2 = 4cx,\quad \text{焦點 } (c, 0),\ \text{準線 } x = -c$$</div></div>
+      <div class="formula"><div class="name">離心率</div><div class="math">$$e = \frac{c}{a}$$</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>小測驗</h2>
+    <div id="quiz"></div>
+  </div>
+
+  <div class="unit-nav"><a href="vector.html">← 平面向量</a><a href="probability.html">下一單元：排列組合與機率 →</a></div>
+</main>
+<footer>高中數學視覺實驗室</footer>
+
+<script>
+injectNav(true);
+
+const p = new Plot(document.getElementById("c1"), { xmin:-8, xmax:8, ymin:-5.5, ymax:5.5, heightPx:420 });
+let type = "ellipse", C = 2.5, tP = 0.9; // tP: P 的參數位置
+const Aconst = 4; // 橢圓/雙曲線的 a
+
+function curvePoint(t) {
+  if (type === "ellipse") {
+    const b = Math.sqrt(Math.max(Aconst*Aconst - C*C, 0.01));
+    return [Aconst*Math.cos(t), b*Math.sin(t)];
+  }
+  if (type === "hyperbola") {
+    const a = 2, b = Math.sqrt(Math.max(C*C - a*a, 0.01));
+    return [a*Math.cosh(t), b*Math.sinh(t)]; // 右支
+  }
+  // 拋物線 y² = 4Cx → x = t²/(4C)
+  return [t*t/(4*C), t];
+}
+
+p.redraw = () => {
+  p.clear(); p.grid(1); p.axes(2);
+  const dim = cssVar("--text-dim");
+  if (type === "ellipse") {
+    const b = Math.sqrt(Math.max(Aconst*Aconst - C*C, 0.01));
+    p.param(t => Aconst*Math.cos(t), t => b*Math.sin(t), 0, 2*Math.PI, cssVar("--curve1"), 3);
+    const [px, py] = curvePoint(tP);
+    const d1 = Math.hypot(px + C, py), d2 = Math.hypot(px - C, py);
+    p.line(-C, 0, px, py, cssVar("--curve2"), 2, [5,5]);
+    p.line(C, 0, px, py, cssVar("--curve3"), 2, [5,5]);
+    p.point(-C, 0, dim, 6, "F₁", -30, 14);
+    p.point(C, 0, dim, 6, "F₂", 12, 14);
+    p.point(px, py, cssVar("--curve4"), 8, "P");
+    document.getElementById("r1").innerHTML =
+      `PF₁ = <b>${d1.toFixed(2)}</b>　PF₂ = <b>${d2.toFixed(2)}</b>　和 = <b style="color:var(--ok)">${(d1+d2).toFixed(2)}</b>（= 2a = ${2*Aconst}，恆定！）`;
+  } else if (type === "hyperbola") {
+    const a = 2, b = Math.sqrt(Math.max(C*C - a*a, 0.01));
+    p.param(t => a*Math.cosh(t), t => b*Math.sinh(t), -2.5, 2.5, cssVar("--curve1"), 3);
+    p.param(t => -a*Math.cosh(t), t => b*Math.sinh(t), -2.5, 2.5, cssVar("--curve1"), 3);
+    p.fnLineSeg(x => b/a*x, dim, 1, [4,6]);
+    p.fnLineSeg(x => -b/a*x, dim, 1, [4,6]);
+    const [px, py] = curvePoint(tP);
+    const d1 = Math.hypot(px + C, py), d2 = Math.hypot(px - C, py);
+    p.line(-C, 0, px, py, cssVar("--curve2"), 2, [5,5]);
+    p.line(C, 0, px, py, cssVar("--curve3"), 2, [5,5]);
+    p.point(-C, 0, dim, 6, "F₁", -30, 14);
+    p.point(C, 0, dim, 6, "F₂", 12, 14);
+    p.point(px, py, cssVar("--curve4"), 8, "P");
+    document.getElementById("r1").innerHTML =
+      `PF₁ = <b>${d1.toFixed(2)}</b>　PF₂ = <b>${d2.toFixed(2)}</b>　|差| = <b style="color:var(--ok)">${Math.abs(d1-d2).toFixed(2)}</b>（= 2a = ${2*a}，恆定！）`;
+  } else {
+    p.param(t => t*t/(4*C), t => t, -5.2, 5.2, cssVar("--curve1"), 3);
+    p.line(-C, p.ymin, -C, p.ymax, cssVar("--warn"), 2, [6,4]); // 準線
+    const [px, py] = curvePoint(tP);
+    const dF = Math.hypot(px - C, py), dL = px + C;
+    p.line(C, 0, px, py, cssVar("--curve3"), 2, [5,5]);
+    p.line(px, py, -C, py, cssVar("--curve2"), 2, [5,5]);
+    p.point(C, 0, dim, 6, "F", 12, 14);
+    p.point(px, py, cssVar("--curve4"), 8, "P");
+    p.text(-C + 0.2, p.ymax - 0.5, "準線", cssVar("--warn"));
+    document.getElementById("r1").innerHTML =
+      `P 到焦點 = <b>${dF.toFixed(2)}</b>　P 到準線 = <b>${dL.toFixed(2)}</b> <b style="color:var(--ok)">（兩者永遠相等！）</b>`;
+  }
+};
+
+// 拖曳 P：把滑鼠位置投影回曲線參數
+p.draggable([{
+  get: () => curvePoint(tP),
+  set: (x, y) => {
+    if (type === "ellipse") tP = Math.atan2(y / Math.sqrt(Math.max(Aconst*Aconst-C*C,0.01)), x / Aconst);
+    else if (type === "hyperbola") tP = Math.max(-2.5, Math.min(2.5, Math.asinh(y / Math.sqrt(Math.max(C*C-4,0.01)))));
+    else tP = Math.max(-5.2, Math.min(5.2, y));
+  }
+}], () => p.redraw());
+
+const noteTexts = {
+  ellipse: "橢圓：$\\overline{PF_1} + \\overline{PF_2} = 2a$（定值）。把焦距 $c$ 拉小，兩焦點靠近，橢圓越來越圓 —— $c=0$ 時就變成圓！",
+  hyperbola: "雙曲線：$|\\overline{PF_1} - \\overline{PF_2}| = 2a$（定值）。灰色虛線是漸近線 —— 曲線無限接近但永不碰到。",
+  parabola: "拋物線：到焦點的距離永遠等於到準線的距離。衛星天線、車燈反射面都是這個原理！"
+};
+document.getElementById("sel-type").onchange = (e) => {
+  type = e.target.value;
+  tP = type === "hyperbola" ? 0.8 : 0.9;
+  const slider = document.getElementById("s-c");
+  if (type === "hyperbola") { slider.min = 2.2; slider.max = 5; if (C < 2.2) C = 3; slider.value = C; }
+  else { slider.min = 0.5; slider.max = 3.8; if (C > 3.8) C = 2.5; slider.value = C; }
+  const n = document.getElementById("note1");
+  n.innerHTML = noteTexts[type];
+  if (window.renderMathInElement) renderMathInElement(n, katexOpt);
+  p.redraw();
+};
+bindSlider("s-c", v => { C = v; p.redraw(); }, v=>v.toFixed(2));
+
+// 測驗
+renderQuiz("quiz", [
+  { q:"橢圓 $\\frac{x^2}{25} + \\frac{y^2}{9} = 1$ 的焦距 $c$ 是？",
+    opts:["$4$","$5$","$\\sqrt{34}$","$3$"], ans:0,
+    expl:"$a^2=25$、$b^2=9$，橢圓中 $c^2 = a^2 - b^2 = 16$，故 $c=4$。" },
+  { q:"雙曲線 $\\frac{x^2}{4} - \\frac{y^2}{9} = 1$ 的漸近線是？",
+    opts:["$y = \\pm\\frac{3}{2}x$","$y = \\pm\\frac{2}{3}x$","$y = \\pm\\frac{9}{4}x$","$y = \\pm 3x$"], ans:0,
+    expl:"$a=2$、$b=3$，漸近線 $y = \\pm\\frac{b}{a}x = \\pm\\frac{3}{2}x$。" },
+  { q:"拋物線 $y^2 = 8x$ 的焦點是？",
+    opts:["$(8, 0)$","$(4, 0)$","$(2, 0)$","$(0, 2)$"], ans:2,
+    expl:"$y^2 = 4cx$ 比對得 $4c = 8$，$c = 2$，焦點 $(2, 0)$、準線 $x = -2$。" },
+], "conics");
+</script>
+</body>
+</html>
