@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>三角函數｜高中數學視覺實驗室</title>
+<meta name="theme-color" content="#0b101c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../css/style.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
 <script src="../js/common.js"></script>
@@ -67,12 +71,11 @@
 injectNav(true);
 
 // 實驗一：單位圓動畫（左圓右波）
-const p1 = new Plot(document.getElementById("c1"), { xmin:-1.8, xmax:11, ymin:-1.6, ymax:1.6, heightPx:340 });
+const p1 = new Plot(document.getElementById("c1"), { xmin:-1.8, xmax:11, ymin:-1.6, ymax:1.6, heightPx:330, aspect:true });
 let theta = 0, playing = false, lastT = 0;
 p1.redraw = () => {
   p1.clear();
-  // 波形區格線
-  p1.grid(Math.PI/2 > 1 ? 1 : 1);
+  p1.grid(1);
   p1.axes(2);
   // 單位圓（圓心在 x=0）
   p1.circle(0, 0, 1, cssVar("--curve1"), 2.5);

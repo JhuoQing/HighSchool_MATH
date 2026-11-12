@@ -5,12 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>高中數學視覺實驗室</title>
 <meta name="description" content="視覺化導向的高中數學學習平台：用互動實驗理解每個概念">
-<link rel="stylesheet" href="css/style.css">
+<meta name="theme-color" content="#0b101c">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <header class="hero">
+  <div class="hero-bg" aria-hidden="true"><span>∑</span><span>π</span><span>∫</span><span>√x</span><span>θ</span></div>
   <h1>高中數學視覺實驗室</h1>
   <p>別只是背公式 —— 拉動滑桿、拖曳圖形，親手「看見」每個數學概念。</p>
 </header>
@@ -22,28 +25,32 @@
 <script src="js/common.js"></script>
 <script>
 const units = [
-  { key:"polynomial", icon:"📈", title:"多項式函數", desc:"係數如何決定圖形？根與交點的對應", grade:"高一" },
-  { key:"explog",     icon:"🚀", title:"指數與對數", desc:"指數成長有多快？對數為什麼能壓縮數字", grade:"高一" },
-  { key:"linecircle", icon:"⭕", title:"直線與圓", desc:"斜率、距離、直線與圓的三種位置關係", grade:"高二" },
-  { key:"trig",       icon:"🌊", title:"三角函數", desc:"單位圓轉一圈，正弦波就畫出來了", grade:"高二" },
-  { key:"vector",     icon:"➡️", title:"平面向量", desc:"拖曳向量，看懂加法、內積與投影", grade:"高二" },
-  { key:"conics",     icon:"🪐", title:"圓錐曲線", desc:"拖動焦點，看橢圓與雙曲線如何誕生", grade:"高三" },
-  { key:"probability",icon:"🎲", title:"排列組合與機率", desc:"用上萬次模擬驗證機率的預言", grade:"高二" },
-  { key:"statistics", icon:"📊", title:"數據分析", desc:"拖曳資料點，看相關係數與回歸線變化", grade:"高三" },
-  { key:"calculus",   icon:"🔬", title:"極限與微分", desc:"割線慢慢靠近，切線就出現了", grade:"高三" },
+  { key:"polynomial", icon:"📈", title:"多項式函數", desc:"係數如何決定圖形？根與交點的對應", grade:"高一", c:"#5b8def" },
+  { key:"explog",     icon:"🚀", title:"指數與對數", desc:"指數成長有多快？對數為什麼能壓縮數字", grade:"高一", c:"#8b6ef3" },
+  { key:"linecircle", icon:"⭕", title:"直線與圓", desc:"斜率、距離、直線與圓的三種位置關係", grade:"高二", c:"#38bdf8" },
+  { key:"trig",       icon:"🌊", title:"三角函數", desc:"單位圓轉一圈，正弦波就畫出來了", grade:"高二", c:"#2dd4bf" },
+  { key:"vector",     icon:"➡️", title:"平面向量", desc:"拖曳向量，看懂加法、內積與投影", grade:"高二", c:"#3ecf8e" },
+  { key:"conics",     icon:"🪐", title:"圓錐曲線", desc:"拖動焦點，看橢圓與雙曲線如何誕生", grade:"高三", c:"#f5a623" },
+  { key:"probability",icon:"🎲", title:"排列組合與機率", desc:"用上萬次模擬驗證機率的預言", grade:"高二", c:"#fb7185" },
+  { key:"statistics", icon:"📊", title:"數據分析", desc:"拖曳資料點，看相關係數與回歸線變化", grade:"高三", c:"#e879f9" },
+  { key:"calculus",   icon:"🔬", title:"極限與微分", desc:"割線慢慢靠近，切線就出現了", grade:"高三", c:"#f87171" },
 ];
 const grid = document.getElementById("unitGrid");
 units.forEach(u => {
   const a = document.createElement("a");
   a.className = "unit-card";
   a.href = `units/${u.key}.html`;
+  a.style.setProperty("--uc", u.c);
   const done = Progress.isDone(u.key);
   a.innerHTML = `
     <div class="icon">${u.icon}</div>
     <h3>${u.title}</h3>
     <p>${u.desc}</p>
-    <span class="tag">${u.grade}</span>
-    ${done ? '<span class="tag done">✓ 已完成測驗</span>' : ""}`;
+    <div class="tags">
+      <span class="tag">${u.grade}</span>
+      ${done ? '<span class="tag done">✓ 已完成測驗</span>' : ""}
+      <span class="go">進入單元 →</span>
+    </div>`;
   grid.appendChild(a);
 });
 injectNav(false);

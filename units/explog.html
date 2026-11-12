@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>指數與對數｜高中數學視覺實驗室</title>
+<meta name="theme-color" content="#0b101c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../css/style.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
 <script src="../js/common.js"></script>
@@ -64,7 +68,7 @@
 injectNav(true);
 
 // 實驗一：互為反函數
-const p1 = new Plot(document.getElementById("c1"), { xmin:-5, xmax:7, ymin:-4, ymax:6, heightPx:400 });
+const p1 = new Plot(document.getElementById("c1"), { xmin:-4.5, xmax:6.5, ymin:-3, ymax:5, heightPx:440, aspect:true });
 let base = 2;
 p1.redraw = () => {
   p1.clear(); p1.grid(1); p1.axes(2);
@@ -87,9 +91,8 @@ bindSlider("s-base", v => { base = v; p1.redraw(); }, v=>v.toFixed(2));
 const p2 = new Plot(document.getElementById("c2"), { xmin:0, xmax:6, ymin:0, ymax:70, heightPx:400 });
 p2.redraw = () => {
   p2.clear();
-  const xm = p2.xmax;
-  p2.grid(xm/6 >= 2 ? Math.ceil(xm/6) : 1);
-  p2.axes(Math.max(1, Math.round(xm/6)));
+  p2.grid();   // 自動刻度：大數改以「萬／億」顯示，不會擠成一團
+  p2.axes();
   p2.fn(x => 10*x, cssVar("--curve3"), 2.5);
   p2.fn(x => x*x, cssVar("--curve2"), 2.5);
   p2.fn(x => Math.pow(2, x), cssVar("--curve1"), 3);

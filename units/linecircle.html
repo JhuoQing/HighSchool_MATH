@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>直線與圓｜高中數學視覺實驗室</title>
+<meta name="theme-color" content="#0b101c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../css/style.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
 <script src="../js/common.js"></script>
@@ -61,7 +65,7 @@
 injectNav(true);
 
 // 實驗一：拖曳兩點
-const p1 = new Plot(document.getElementById("c1"), { xmin:-8, xmax:8, ymin:-5, ymax:5, heightPx:380 });
+const p1 = new Plot(document.getElementById("c1"), { xmin:-7, xmax:7, ymin:-4.5, ymax:4.5, heightPx:400, aspect:true });
 let Ax=-3, Ay=-1, Bx=2, By=3;
 p1.redraw = () => {
   p1.clear(); p1.grid(1); p1.axes(2);
@@ -90,7 +94,7 @@ p1.draggable([
 p1.redraw();
 
 // 實驗二：直線與圓
-const p2 = new Plot(document.getElementById("c2"), { xmin:-6.5, xmax:6.5, ymin:-5, ymax:5, heightPx:400 });
+const p2 = new Plot(document.getElementById("c2"), { xmin:-5.5, xmax:5.5, ymin:-4.5, ymax:4.5, heightPx:420, aspect:true });
 let kLine = 1.5;
 p2.redraw = () => {
   p2.clear(); p2.grid(1); p2.axes(2);

@@ -19,34 +19,57 @@ const Progress = {
   isDone(unit) { return !!this.get()[unit]; }
 };
 
-/* ===== CSS 變數取色（讓 canvas 跟著主題變） ===== */
+/* ===== CSS 變數取色 ===== */
 function cssVar(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
+
+const MONO = "'JetBrains Mono', ui-monospace, monospace";
 
 /* ===== Canvas 座標系繪圖工具 ===== */
 class Plot {
   /**
    * @param {HTMLCanvasElement} canvas
-   * @param {object} opt {xmin,xmax,ymin,ymax,aspectH(px 高度)}
+   * @param {object} opt {xmin,xmax,ymin,ymax,heightPx,aspect}
+   *   aspect:true → 等比例座標（圓看起來是圓），以「包含指定範圍」為原則向外擴張
    */
   constructor(canvas, opt = {}) {
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
-    this.xmin = opt.xmin ?? -10; this.xmax = opt.xmax ?? 10;
-    this.ymin = opt.ymin ?? -6;  this.ymax = opt.ymax ?? 6;
+    this._base = {
+      xmin: opt.xmin ?? -10, xmax: opt.xmax ?? 10,
+      ymin: opt.ymin ?? -6, ymax: opt.ymax ?? 6
+    };
+    this.xmin = this._base.xmin; this.xmax = this._base.xmax;
+    this.ymin = this._base.ymin; this.ymax = this._base.ymax;
     this.heightPx = opt.heightPx ?? 420;
+    this.aspect = !!opt.aspect;
     this._resize();
     window.addEventListener("resize", () => { this._resize(); this.redraw && this.redraw(); });
     document.addEventListener("themechange", () => this.redraw && this.redraw());
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.redraw && this.redraw());
   }
   _resize() {
     const dpr = window.devicePixelRatio || 1;
     const w = this.canvas.clientWidth || this.canvas.parentElement.clientWidth || 800;
-    this.W = w; this.H = this.heightPx;
+    // 小螢幕自動降低高度，維持合理比例
+    this.W = w;
+    this.H = Math.min(this.heightPx, Math.max(240, Math.round(w * 0.7)));
     this.canvas.width = w * dpr; this.canvas.height = this.H * dpr;
     this.canvas.style.height = this.H + "px";
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (this.aspect) this._fitAspect();
+  }
+  /** 等比例：以較小的縮放率為準，對稱擴張另一軸的範圍 */
+  _fitAspect() {
+    const b = this._base;
+    const sx = this.W / (b.xmax - b.xmin);
+    const sy = this.H / (b.ymax - b.ymin);
+    const s = Math.min(sx, sy);
+    const xspan = this.W / s, yspan = this.H / s;
+    const cx = (b.xmin + b.xmax) / 2, cy = (b.ymin + b.ymax) / 2;
+    this.xmin = cx - xspan / 2; this.xmax = cx + xspan / 2;
+    this.ymin = cy - yspan / 2; this.ymax = cy + yspan / 2;
   }
   // 座標轉換
   px(x) { return (x - this.xmin) / (this.xmax - this.xmin) * this.W; }
@@ -56,40 +79,64 @@ class Plot {
 
   clear() { this.ctx.clearRect(0, 0, this.W, this.H); }
 
-  grid(step = 1) {
+  /** 取「漂亮」刻度間距（1, 2, 5 × 10^n），目標約 targetN 格 */
+  static niceStep(span, targetN = 10) {
+    const raw = Math.abs(span) / targetN;
+    const pow = Math.pow(10, Math.floor(Math.log10(raw || 1)));
+    for (const m of [1, 2, 5, 10]) if (m * pow >= raw) return m * pow;
+    return 10 * pow;
+  }
+  _autoX(target) { return Plot.niceStep(this.xmax - this.xmin, target); }
+  _autoY(target) { return Plot.niceStep(this.ymax - this.ymin, target); }
+
+  /** 格線。不給參數 → 依範圍自動；給了也會自動防過密 */
+  grid(stepX, stepY) {
+    stepX = Math.max(stepX || 0, this._autoX(14));
+    stepY = Math.max(stepY || 0, this._autoY(12));
     const c = this.ctx;
     c.lineWidth = 1; c.strokeStyle = cssVar("--grid");
     c.beginPath();
-    for (let x = Math.ceil(this.xmin / step) * step; x <= this.xmax; x += step) {
+    for (let x = Math.ceil(this.xmin / stepX) * stepX; x <= this.xmax; x += stepX) {
       c.moveTo(this.px(x), 0); c.lineTo(this.px(x), this.H);
     }
-    for (let y = Math.ceil(this.ymin / step) * step; y <= this.ymax; y += step) {
+    for (let y = Math.ceil(this.ymin / stepY) * stepY; y <= this.ymax; y += stepY) {
       c.moveTo(0, this.py(y)); c.lineTo(this.W, this.py(y));
     }
     c.stroke();
   }
 
-  axes(labelStep = 2) {
+  /** 座標軸與刻度標籤。不給參數 → 自動間距，避免數字擠成一團 */
+  axes(stepX, stepY) {
+    stepX = Math.max(stepX || 0, this._autoX(7));
+    stepY = Math.max(stepY || 0, this._autoY(6));
     const c = this.ctx;
     c.lineWidth = 1.5; c.strokeStyle = cssVar("--axis");
+    const y0 = Math.min(Math.max(this.py(0), 0), this.H);
+    const x0 = Math.min(Math.max(this.px(0), 0), this.W);
     c.beginPath();
-    c.moveTo(0, this.py(0)); c.lineTo(this.W, this.py(0));
-    c.moveTo(this.px(0), 0); c.lineTo(this.px(0), this.H);
+    c.moveTo(0, y0); c.lineTo(this.W, y0);
+    c.moveTo(x0, 0); c.lineTo(x0, this.H);
     c.stroke();
-    // 刻度
-    c.fillStyle = cssVar("--axis"); c.font = "11px ui-monospace, monospace";
+    c.fillStyle = cssVar("--axis"); c.font = "11px " + MONO;
     c.textAlign = "center"; c.textBaseline = "top";
-    for (let x = Math.ceil(this.xmin / labelStep) * labelStep; x <= this.xmax; x += labelStep) {
-      if (Math.abs(x) < 1e-9) continue;
-      c.fillText(this._fmt(x), this.px(x), this.py(0) + 4);
+    for (let x = Math.ceil(this.xmin / stepX) * stepX; x <= this.xmax; x += stepX) {
+      if (Math.abs(x) < stepX / 2) continue;
+      c.fillText(this._fmt(x), this.px(x), Math.min(y0 + 4, this.H - 14));
     }
     c.textAlign = "left"; c.textBaseline = "middle";
-    for (let y = Math.ceil(this.ymin / labelStep) * labelStep; y <= this.ymax; y += labelStep) {
-      if (Math.abs(y) < 1e-9) continue;
-      c.fillText(this._fmt(y), this.px(0) + 5, this.py(y));
+    for (let y = Math.ceil(this.ymin / stepY) * stepY; y <= this.ymax; y += stepY) {
+      if (Math.abs(y) < stepY / 2) continue;
+      c.fillText(this._fmt(y), Math.min(x0 + 5, this.W - 44), this.py(y));
     }
   }
-  _fmt(v) { return Math.abs(v) >= 1000 ? v.toExponential(0) : +v.toFixed(2) + ""; }
+  /** 數字友善格式：大數用「萬／億」，避免一長串 0 */
+  _fmt(v) {
+    const a = Math.abs(v);
+    const trim = n => (+n.toFixed(2)).toString();
+    if (a >= 1e8) return trim(v / 1e8) + "億";
+    if (a >= 1e4) return trim(v / 1e4) + "萬";
+    return trim(v);
+  }
 
   /** 畫函數曲線 */
   fn(f, color = null, width = 2.5, dash = null) {
@@ -102,7 +149,7 @@ class Plot {
     for (let i = 0; i <= N; i++) {
       const x = this.ix(i);
       const y = f(x);
-      if (!isFinite(y) || Math.abs(y) > 1e6) { pen = false; continue; }
+      if (!isFinite(y)) { pen = false; continue; }
       const Y = this.py(y);
       if (Y < -2000 || Y > this.H + 2000) { pen = false; continue; }
       if (!pen) { c.moveTo(i, Y); pen = true; } else c.lineTo(i, Y);
@@ -153,7 +200,7 @@ class Plot {
     c.beginPath(); c.arc(this.px(x), this.py(y), r, 0, Math.PI * 2); c.fill();
     c.strokeStyle = cssVar("--bg2"); c.lineWidth = 2; c.stroke();
     if (label) {
-      c.fillStyle = cssVar("--text"); c.font = "bold 13px ui-monospace, monospace";
+      c.fillStyle = cssVar("--text"); c.font = "bold 13px " + MONO;
       c.textAlign = "left"; c.textBaseline = "middle";
       c.fillText(label, this.px(x) + labelDx, this.py(y) + labelDy);
     }
@@ -172,23 +219,22 @@ class Plot {
     c.lineTo(X2 - hl * Math.cos(ang + 0.4), Y2 - hl * Math.sin(ang + 0.4));
     c.closePath(); c.fill();
     if (label) {
-      c.font = "bold 14px ui-monospace, monospace";
+      c.font = "bold 14px " + MONO;
       c.textAlign = "center";
       c.fillText(label, (X1 + X2) / 2 + 12 * Math.cos(ang - Math.PI / 2), (Y1 + Y2) / 2 + 12 * Math.sin(ang - Math.PI / 2));
     }
   }
 
-  text(x, y, str, color = null, font = "13px ui-monospace, monospace", align = "left") {
+  text(x, y, str, color = null, font = null, align = "left") {
     const c = this.ctx;
     c.fillStyle = color || cssVar("--text");
-    c.font = font; c.textAlign = align; c.textBaseline = "middle";
+    c.font = font || ("13px " + MONO); c.textAlign = align; c.textBaseline = "middle";
     c.fillText(str, this.px(x), this.py(y));
   }
 
   circle(cx, cy, r, color = null, width = 2.5, fill = null) {
     const c = this.ctx;
     c.beginPath();
-    // 以 x 比例換算半徑（假設等比例座標時正確；否則畫橢圓）
     const rx = r / (this.xmax - this.xmin) * this.W;
     const ry = r / (this.ymax - this.ymin) * this.H;
     c.ellipse(this.px(cx), this.py(cy), rx, ry, 0, 0, Math.PI * 2);
@@ -196,7 +242,7 @@ class Plot {
     c.strokeStyle = color || cssVar("--curve1"); c.lineWidth = width; c.stroke();
   }
 
-  /** 讓多個「可拖曳點」生效。points: [{get:()=>[x,y], set:(x,y)=>{}}] */
+  /** 可拖曳點。points: [{get:()=>[x,y], set:(x,y)=>{}}] */
   draggable(points, onChange) {
     let active = null;
     const pick = (ev) => {
@@ -204,7 +250,7 @@ class Plot {
       const mx = ev.clientX - rect.left, my = ev.clientY - rect.top;
       for (const p of points) {
         const [x, y] = p.get();
-        if (Math.hypot(this.px(x) - mx, this.py(y) - my) < 18) return p;
+        if (Math.hypot(this.px(x) - mx, this.py(y) - my) < 24) return p;
       }
       return null;
     };
@@ -241,7 +287,6 @@ function bindSlider(id, onInput, fmt) {
 }
 
 /* ===== 測驗引擎 ===== */
-/** questions: [{q, opts:[...], ans:索引, expl}] ; q/opts 可含 LaTeX（$...$） */
 function renderQuiz(containerId, questions, unitKey) {
   const box = document.getElementById(containerId);
   let correct = 0, answered = 0;
@@ -289,15 +334,16 @@ const katexOpt = {
   throwOnError: false
 };
 
-/* ===== 共用頁首 ===== */
+/* ===== 共用頁首（含首頁按鈕） ===== */
 function injectNav(isUnit) {
   const root = isUnit ? "../" : "";
   const nav = document.createElement("nav");
   nav.className = "nav";
   nav.innerHTML = `
-    <a class="brand" href="${root}index.html"><span class="logo">∑</span>高中數學視覺實驗室</a>
+    <a class="brand" href="${root}index.html"><span class="logo">∑</span><span class="brand-txt">高中數學視覺實驗室</span></a>
     <div class="actions">
-      <button class="btn-icon" onclick="toggleTheme()" title="切換深淺色">◐</button>
+      <a class="btn-icon home-btn" href="${root}index.html" title="回首頁" aria-label="回首頁">🏠<span class="home-txt">首頁</span></a>
+      <button class="btn-icon" onclick="toggleTheme()" title="切換深淺色" aria-label="切換深淺色">◐</button>
     </div>`;
   document.body.prepend(nav);
 }
