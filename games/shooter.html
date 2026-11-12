@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>函數打靶｜高中數學視覺實驗室</title>
+<meta name="theme-color" content="#0b101c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="../js/data.js"></script>
+<script src="../js/common.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, katexOpt)"></script>
+</head>
+<body>
+<main class="page">
+  <h1>🎯 函數打靶</h1>
+  <p class="subtitle">曲線<b>沒有即時預覽</b> —— 先動腦算出參數，再發射。每關只有 3 發子彈！</p>
+
+  <div class="lab">
+    <div class="hud">
+      <div class="box"><small>關卡</small><b id="h-level">1</b></div>
+      <div class="box"><small>子彈</small><b id="h-shots">●●●</b></div>
+      <div class="box"><small>得分</small><b id="h-score">0</b></div>
+      <div class="box"><small>最高紀錄</small><b id="h-best">0</b></div>
+    </div>
+    <div class="qbig" id="formula" style="padding:.6rem"></div>
+    <canvas id="c1"></canvas>
+    <div class="controls" id="params"></div>
+    <div class="btn-row">
+      <button class="btn primary" id="b-fire">🚀 發射</button>
+      <button class="btn" id="b-retry" style="display:none">⟲ 重玩本關</button>
+      <button class="btn" id="b-answer" style="display:none">👀 看答案並前進（不計分）</button>
+    </div>
+    <div class="msg" id="msg">調整參數，讓曲線穿過所有 ⭐ 靶心</div>
+  </div>
+
+  <div class="section">
+    <h2>玩法</h2>
+    <ul class="rules">
+      <li>每關給一種函數形式與幾個靶心，調整參數後按「發射」，曲線必須穿過<b>全部</b>靶心才過關。</li>
+      <li>發射前看不到曲線；失敗的彈道會留下淡淡的軌跡，幫助你修正。</li>
+      <li>過關得分 = 100 × 剩餘子彈數（一發命中 300 分）。共 10 關，越後面函數越難。</li>
+      <li>小訣竅：把靶心座標代入函數，解聯立方程式！</li>
+    </ul>
+  </div>
+</main>
+<footer>高中數學視覺實驗室</footer>
+
+<script>
+injectNav(true);
+
+const LEVELS = [
+  { name:"直線", tex:"y = mx + b", ps:[["m",-5,5,0.5,0],["b",-6,6,0.5,0]], f:(x,p)=>p.m*x+p.b, T:[[-2,-3],[2,5]], ans:{m:2,b:1} },
+  { name:"直線", tex:"y = mx + b", ps:[["m",-5,5,0.5,0],["b",-6,6,0.5,0]], f:(x,p)=>p.m*x+p.b, T:[[-4,5],[4,1]], ans:{m:-0.5,b:3} },
+  { name:"拋物線（頂點式）", tex:"y = a(x − h)² + k", ps:[["a",-3,3,0.5,1],["h",-5,5,0.5,0],["k",-5,5,0.5,0]], f:(x,p)=>p.a*(x-p.h)**2+p.k, T:[[1,-2],[3,2],[-1,2]], ans:{a:1,h:1,k:-2} },
+  { name:"拋物線（頂點式）", tex:"y = a(x − h)² + k", ps:[["a",-3,3,0.5,1],["h",-5,5,0.5,0],["k",-5,5,0.5,0]], f:(x,p)=>p.a*(x-p.h)**2+p.k, T:[[2,5],[0,3],[6,-3]], ans:{a:-0.5,h:2,k:5} },
+  { name:"拋物線（一般式）", tex:"y = ax² + bx + c", ps:[["a",-3,3,0.5,1],["b",-6,6,0.5,0],["c",-6,6,0.5,0]], f:(x,p)=>p.a*x*x+p.b*x+p.c, T:[[-1,6],[0,1],[2,3]], ans:{a:2,b:-3,c:1} },
+  { name:"絕對值函數", tex:"y = a|x − h| + k", ps:[["a",-3,3,0.5,1],["h",-5,5,0.5,0],["k",-5,5,0.5,0]], f:(x,p)=>p.a*Math.abs(x-p.h)+p.k, T:[[-1,4],[2,-2],[5,4]], ans:{a:2,h:2,k:-2} },
+  { name:"指數函數", tex:"y = a · 2ˣ + c", ps:[["a",-4,4,0.5,1],["c",-6,6,0.5,0]], f:(x,p)=>p.a*Math.pow(2,x)+p.c, T:[[0,-1],[1,1],[2,5]], ans:{a:2,c:-3} },
+  { name:"正弦函數", tex:"y = A sin(2πx / T) + k", ps:[["A",-4,4,0.5,1],["T",1,8,0.5,2],["k",-4,4,0.5,0]], f:(x,p)=>p.A*Math.sin(2*Math.PI*x/p.T)+p.k, T:[[1,3],[3,-1],[4,1],[-1,-1]], ans:{A:2,T:4,k:1} },
+  { name:"三次函數", tex:"y = a(x − r₁)(x − r₂)(x − r₃)", ps:[["a",-2,2,0.25,1],["r1",-5,5,0.5,0],["r2",-5,5,0.5,0],["r3",-5,5,0.5,0]], f:(x,p)=>p.a*(x-p.r1)*(x-p.r2)*(x-p.r3), T:[[-2,0],[1,0],[3,0],[0,3]], ans:{a:0.5,r1:-2,r2:1,r3:3} },
+  { name:"對數函數", tex:"y = a · log₂(x − h)", ps:[["a",-4,4,0.5,1],["h",-5,5,0.5,0]], f:(x,p)=>x>p.h?p.a*Math.log2(x-p.h):NaN, T:[[2,0],[3,2],[5,4],[9,6]], ans:{a:2,h:1} },
+];
+
+const p = new Plot(document.getElementById("c1"), { xmin:-7, xmax:10, ymin:-5, ymax:7.5, heightPx:440, aspect:true });
+const $ = id => document.getElementById(id);
+let lv = 0, shots = 3, score = 0, P = {}, trails = [], anim = null, cleared = false, finished = false;
+let best = +(localStorage.getItem("shooter-best") || 0);
+const say = (t, cls = "") => { $("msg").innerHTML = t; $("msg").className = "msg " + cls; };
+
+function loadLevel() {
+  const L = LEVELS[lv];
+  shots = 3; trails = []; anim = null; cleared = false; P = {};
+  $("formula").textContent = `第 ${lv + 1} 關・${L.name}：${L.tex}`;
+  const box = $("params"); box.innerHTML = "";
+  L.ps.forEach(([id, mn, mx, st, init]) => {
+    P[id] = init;
+    const d = document.createElement("div"); d.className = "ctrl";
+    const label = id.replace(/r(\d)/, (_, n) => "r" + "₁₂₃"[n - 1]);
+    d.innerHTML = `<label for="p-${id}">${label} <b></b></label><input type="range" id="p-${id}" min="${mn}" max="${mx}" step="${st}" value="${init}">`;
+    box.appendChild(d);
+    bindSlider("p-" + id, v => { P[id] = v; }, v => (+v.toFixed(2)).toString());
+  });
+  $("b-retry").style.display = "none"; $("b-answer").style.display = "none"; $("b-fire").style.display = "";
+  say("調整參數，讓曲線穿過所有 ⭐ 靶心");
+  hud(); p.redraw();
+}
+function hud() {
+  $("h-level").textContent = `${lv + 1}/${LEVELS.length}`;
+  $("h-shots").textContent = "●".repeat(shots) + "○".repeat(3 - shots);
+  $("h-score").textContent = score; $("h-best").textContent = best;
+}
+p.redraw = () => {
+  const L = LEVELS[lv];
+  p.clear(); p.grid(1); p.axes(1);
+  // 舊彈道
+  p.ctx.globalAlpha = 0.28;
+  trails.forEach(t => p.fn(x => L.f(x, t), cssVar("--text-dim"), 2, [5, 5]));
+  p.ctx.globalAlpha = 1;
+  // 動畫中的彈道
+  if (anim) p.fn(x => x <= anim.x ? L.f(x, anim.P) : NaN, anim.ok ? cssVar("--ok") : cssVar("--curve2"), 3.5);
+  // 靶心
+  L.T.forEach(([tx, ty], i) => {
+    const hit = anim && anim.x >= tx && anim.hits[i];
+    const miss = anim && anim.x >= tx && !anim.hits[i];
+    p.circle(tx, ty, 0.42, hit ? cssVar("--ok") : miss ? cssVar("--err") : cssVar("--warn"), 2.5);
+    p.text(tx, ty, hit ? "✓" : "⭐", hit ? cssVar("--ok") : null, "15px sans-serif", "center");
+    p.text(tx + 0.5, ty + 0.55, `(${tx},${ty})`, cssVar("--text-dim"), "11px 'JetBrains Mono', monospace");
+  });
+};
+$("b-fire").onclick = () => {
+  if (anim && !anim.done || shots <= 0 || cleared) return;
+  const L = LEVELS[lv], shotP = { ...P };
+  const hits = L.T.map(([tx, ty]) => Math.abs(L.f(tx, shotP) - ty) < 0.13);
+  const ok = hits.every(Boolean);
+  shots--; hud();
+  anim = { x: p.xmin, P: shotP, hits, ok, done: false };
+  const t0 = performance.now(), dur = 1300;
+  const step = t => {
+    const u = Math.min(1, (t - t0) / dur);
+    anim.x = p.xmin + (p.xmax - p.xmin) * u;
+    p.redraw();
+    if (u < 1) return requestAnimationFrame(step);
+    anim.done = true;
+    if (ok) {
+      cleared = true;
+      const pts = 100 * (shots + 1); score += pts;
+      if (score > best) { best = score; localStorage.setItem("shooter-best", best); }
+      hud();
+      if (lv === LEVELS.length - 1) { say(`🏆 全破！總分 ${score}。你是函數神射手！`, "ok"); $("b-fire").style.display = "none"; $("b-retry").style.display = ""; $("b-retry").textContent = "⟲ 從第 1 關再玩一次"; finished = true; }
+      else { say(`🎉 全部命中！+${pts} 分，前往下一關…`, "ok"); setTimeout(() => { lv++; loadLevel(); }, 1500); }
+    } else {
+      trails.push(shotP);
+      const n = hits.filter(Boolean).length;
+      if (shots > 0) say(`命中 ${n}/${L.T.length} 個靶心，還剩 ${shots} 發。觀察彈道偏差再修正！`, "bad");
+      else { say(`子彈用完了！命中 ${n}/${L.T.length}。可以重玩本關或看答案。`, "bad"); $("b-fire").style.display = "none"; $("b-retry").style.display = ""; $("b-answer").style.display = ""; }
+    }
+  };
+  requestAnimationFrame(step);
+};
+$("b-retry").onclick = () => { if (finished) { finished = false; lv = 0; score = 0; $("b-retry").textContent = "⟲ 重玩本關"; } loadLevel(); };
+$("b-answer").onclick = () => {
+  const L = LEVELS[lv];
+  anim = { x: p.xmax, P: L.ans, hits: L.T.map(() => true), ok: true, done: true };
+  p.redraw();
+  say("答案：" + Object.entries(L.ans).map(([k, v]) => `${k} = ${v}`).join("、") + (lv < LEVELS.length - 1 ? "　3 秒後前往下一關…" : ""));
+  $("b-answer").style.display = "none"; $("b-retry").style.display = "none";
+  if (lv < LEVELS.length - 1) setTimeout(() => { lv++; loadLevel(); }, 3000);
+  else { $("b-retry").style.display = ""; $("b-retry").textContent = "⟲ 從第 1 關再玩一次"; finished = true; }
+};
+loadLevel();
+</script>
+</body>
+</html>

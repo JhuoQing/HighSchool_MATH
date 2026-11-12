@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>空間中的平面與直線｜高中數學視覺實驗室</title>
+<meta name="theme-color" content="#0b101c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="../js/data.js"></script>
+<script src="../js/common.js"></script>
+<script src="../js/plot3d.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, katexOpt)"></script>
+</head>
+<body>
+<main class="page">
+  <h1>🛩️ 空間中的平面與直線</h1>
+  <p class="subtitle">平面由「法向量」決定方向 —— <b>拖曳畫面旋轉視角</b>，從側面看平面最清楚。</p>
+
+  <div class="section">
+    <h2>實驗一：平面方程式 ax + by + cz = d</h2>
+    <p>係數 $(a, b, c)$ 就是平面的<b>法向量</b> $\vec{n}$（紅色箭頭，垂直於平面）；$d$ 則控制平面沿法向量方向前後平移。把視角轉到平面的「側面」，確認紅箭頭真的垂直：</p>
+    <div class="lab">
+      <canvas id="c1"></canvas>
+      <div class="controls">
+        <div class="ctrl"><label for="s-a">a <b></b></label><input type="range" id="s-a" min="-3" max="3" step="0.5" value="1"></div>
+        <div class="ctrl"><label for="s-b">b <b></b></label><input type="range" id="s-b" min="-3" max="3" step="0.5" value="1"></div>
+        <div class="ctrl"><label for="s-c">c <b></b></label><input type="range" id="s-c" min="-3" max="3" step="0.5" value="2"></div>
+        <div class="ctrl"><label for="s-d">d <b></b></label><input type="range" id="s-d" min="-8" max="8" step="0.5" value="4"></div>
+      </div>
+      <div class="readout" id="r1"></div>
+    </div>
+    <div class="note">只改 $d$：平面<b>平行移動</b>、法向量方向不變。把 $(a,b,c)$ 設成 $(0,0,1)$ 就得到水平面 $z = d$。虛線是原點到平面的最短距離（沿法向量方向）。</div>
+  </div>
+
+  <div class="section">
+    <h2>實驗二：直線與平面的關係</h2>
+    <p>固定平面 $E: x + y + 2z = 4$，直線 $L$ 通過點 $A(-2,-1,0)$、方向向量為 $\vec{v} = (l, m, n)$。調整方向，看交點（綠點）怎麼移動 —— 什麼時候直線會<b>平行</b>平面而沒有交點？</p>
+    <div class="lab">
+      <canvas id="c2"></canvas>
+      <div class="controls">
+        <div class="ctrl"><label for="s-l">l <b></b></label><input type="range" id="s-l" min="-3" max="3" step="0.5" value="2"></div>
+        <div class="ctrl"><label for="s-m">m <b></b></label><input type="range" id="s-m" min="-3" max="3" step="0.5" value="1"></div>
+        <div class="ctrl"><label for="s-n">n <b></b></label><input type="range" id="s-n" min="-3" max="3" step="0.5" value="1"></div>
+      </div>
+      <div class="readout" id="r2"></div>
+    </div>
+    <div class="note">關鍵在 $\vec{n}\cdot\vec{v}$：若等於 0，表示直線方向與法向量垂直 → 直線<b>平行</b>平面。試試 $\vec{v} = (2, 0, -1)$：$1\cdot2 + 1\cdot0 + 2\cdot(-1) = 0$。</div>
+  </div>
+
+  <div class="section">
+    <h2>關鍵公式</h2>
+    <div class="formulas">
+      <div class="formula"><div class="name">平面方程式（點法式）</div><div class="math">$$a(x-x_0)+b(y-y_0)+c(z-z_0)=0,\quad \vec{n}=(a,b,c)$$</div></div>
+      <div class="formula"><div class="name">點到平面距離</div><div class="math">$$\text{距離} = \frac{|ax_0+by_0+cz_0-d|}{\sqrt{a^2+b^2+c^2}}$$</div></div>
+      <div class="formula"><div class="name">直線參數式</div><div class="math">$$\begin{cases}x = x_0 + lt\\ y = y_0 + mt\\ z = z_0 + nt\end{cases}\quad t\in\mathbb{R}$$</div></div>
+      <div class="formula"><div class="name">兩平面夾角</div><div class="math">$$\cos\theta = \frac{|\vec{n_1}\cdot\vec{n_2}|}{|\vec{n_1}||\vec{n_2}|}$$</div></div>
+    </div>
+  </div>
+
+  <div class="section"><h2>小測驗</h2><div id="quiz"></div></div>
+  <div class="unit-nav"></div>
+</main>
+<footer>高中數學視覺實驗室</footer>
+
+<script>
+injectNav(true);
+const f1 = v => (+v.toFixed(2)).toString();
+const R = 4;
+
+// 實驗一：平面與法向量
+const g1 = new Plot3D(document.getElementById("c1"), { range: 5.5 });
+let N = [1, 1, 2], D = 4;
+g1.redraw = () => {
+  g1.begin(); g1.axes(R);
+  const len2 = N[0]*N[0] + N[1]*N[1] + N[2]*N[2];
+  const out = document.getElementById("r1");
+  if (len2 < 1e-9) {
+    g1.end();
+    out.innerHTML = `<b style="color:var(--err)">a = b = c = 0 時不是平面</b>（法向量不能是零向量）`;
+    return;
+  }
+  const poly = Plot3D.planePoly(N[0], N[1], N[2], D, R);
+  g1.poly(poly, cssVar("--curve1"), cssVar("--curve1"), 0.3);
+  const len = Math.sqrt(len2);
+  const F = N.map(v => v * D / len2);                  // 原點在平面上的垂足
+  const tip = F.map((v, k) => v + N[k] / len * 2);
+  g1.line([0,0,0], F, cssVar("--text-dim"), 1.5, [5,4]);
+  g1.point(F, cssVar("--curve3"), 5, "垂足");
+  g1.arrow(F, tip, cssVar("--curve4"), 3.5, "n");
+  g1.point([0,0,0], cssVar("--axis"), 4, "O");
+  g1.end();
+  out.innerHTML =
+    `平面：<b>${f1(N[0])}</b>x + <b>${f1(N[1])}</b>y + <b>${f1(N[2])}</b>z = <b>${f1(D)}</b>　法向量 n = (${f1(N[0])}, ${f1(N[1])}, ${f1(N[2])})<br>` +
+    `原點到平面距離 = |d| / |n| = <b>${(Math.abs(D)/len).toFixed(3)}</b>` +
+    (poly.length < 3 ? `　<span style="color:var(--warn)">（平面已移出顯示範圍）</span>` : "");
+};
+bindSlider("s-a", v => { N[0] = v; g1.redraw(); });
+bindSlider("s-b", v => { N[1] = v; g1.redraw(); });
+bindSlider("s-c", v => { N[2] = v; g1.redraw(); });
+bindSlider("s-d", v => { D = v; g1.redraw(); });
+
+// 實驗二：直線與平面
+const g2 = new Plot3D(document.getElementById("c2"), { range: 5.5, yaw: -1.0 });
+const EN = [1, 1, 2], ED = 4, A = [-2, -1, 0];
+let dir = [2, 1, 1];
+g2.redraw = () => {
+  g2.begin(); g2.axes(R);
+  g2.poly(Plot3D.planePoly(...EN, ED, R), cssVar("--curve1"), cssVar("--curve1"), 0.28);
+  const out = document.getElementById("r2");
+  const dl = Math.hypot(...dir);
+  g2.point(A, cssVar("--curve2"), 6, "A");
+  if (dl < 1e-9) { g2.end(); out.innerHTML = `<b style="color:var(--err)">方向向量不能是零向量</b>`; return; }
+  const ud = dir.map(v => v / dl);
+  g2.line(A.map((v,k) => v - ud[k]*7), A.map((v,k) => v + ud[k]*7), cssVar("--curve2"), 3);
+  g2.arrow(A, A.map((v,k) => v + dir[k]), cssVar("--curve4"), 3, "v");
+  const nd = EN[0]*dir[0] + EN[1]*dir[1] + EN[2]*dir[2];
+  const nA = EN[0]*A[0] + EN[1]*A[1] + EN[2]*A[2];
+  if (Math.abs(nd) < 1e-9) {
+    g2.end();
+    out.innerHTML = `n·v = <b>0</b> → 直線與平面<b style="color:var(--warn)">平行，沒有交點</b>`;
+    return;
+  }
+  const t = (ED - nA) / nd;
+  const X = A.map((v,k) => v + t*dir[k]);
+  g2.point(X, cssVar("--curve3"), 8, "交點");
+  g2.end();
+  const phi = Math.asin(Math.min(1, Math.abs(nd) / (Math.hypot(...EN) * dl))) * 180 / Math.PI;
+  out.innerHTML =
+    `n·v = <b>${f1(nd)}</b> ≠ 0 → 相交於一點　t = <b>${f1(t)}</b>　交點 (<b>${f1(X[0])}</b>, <b>${f1(X[1])}</b>, <b>${f1(X[2])}</b>)<br>直線與平面夾角 ≈ <b>${phi.toFixed(1)}°</b>`;
+};
+bindSlider("s-l", v => { dir[0] = v; g2.redraw(); });
+bindSlider("s-m", v => { dir[1] = v; g2.redraw(); });
+bindSlider("s-n", v => { dir[2] = v; g2.redraw(); });
+
+renderQuiz("quiz", [
+  { q:"平面 $2x - y + 3z = 6$ 的一個法向量是？",
+    opts:["$(2, -1, 3)$","$(2, 1, 3)$","$(6, 6, 6)$","$(3, -1, 2)$"], ans:0,
+    expl:"平面 $ax+by+cz=d$ 的法向量就是係數 $(a,b,c) = (2,-1,3)$。" },
+  { q:"原點到平面 $x + 2y + 2z = 9$ 的距離是？",
+    opts:["$9$","$3$","$\\frac{9}{5}$","$1$"], ans:1,
+    expl:"$\\dfrac{|0+0+0-9|}{\\sqrt{1+4+4}} = \\dfrac{9}{3} = 3$。" },
+  { q:"直線方向向量 $(1, 1, -1)$ 與平面 $x + y + 2z = 5$ 的關係？（直線不在平面上）",
+    opts:["垂直","相交於一點但不垂直","平行","無法判斷"], ans:2,
+    expl:"$\\vec{n}\\cdot\\vec{v} = 1 + 1 - 2 = 0$，方向向量垂直於法向量，所以直線平行平面。" },
+], "spaceplane");
+</script>
+</body>
+</html>

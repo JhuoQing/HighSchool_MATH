@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>公式速查表｜高中數學視覺實驗室</title>
+<meta name="theme-color" content="#0b101c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="../js/data.js"></script>
+<script src="../js/common.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, katexOpt)"></script>
+</head>
+<body>
+<main class="page">
+  <h1>📒 公式速查表</h1>
+  <p class="subtitle">全單元重點公式一頁收齊。輸入關鍵字（例如「內積」「等比」「導數」）即時篩選。</p>
+
+  <div class="filters">
+    <input class="search" id="q" type="search" placeholder="🔍 搜尋公式名稱或單元…" autocomplete="off">
+  </div>
+  <div id="list"></div>
+</main>
+<footer>高中數學視覺實驗室</footer>
+
+<script>
+injectNav(true);
+
+const F = [
+  ["polynomial", [
+    ["二次函數頂點式", "y = a(x-h)^2 + k,\\ \\text{頂點}(h,k)"],
+    ["配方法頂點", "h = -\\tfrac{b}{2a},\\quad k = c - \\tfrac{b^2}{4a}"],
+    ["判別式", "\\Delta = b^2 - 4ac"],
+    ["公式解", "x = \\dfrac{-b \\pm \\sqrt{b^2-4ac}}{2a}"],
+    ["根與係數", "r_1 + r_2 = -\\tfrac{b}{a},\\quad r_1 r_2 = \\tfrac{c}{a}"],
+    ["餘式定理／因式定理", "f(x)\\div(x-a)\\ \\text{餘}\\ f(a);\\quad f(a)=0 \\iff (x-a)\\mid f(x)"],
+  ]],
+  ["explog", [
+    ["指數律", "a^m a^n = a^{m+n},\\quad (a^m)^n = a^{mn},\\quad a^{-n} = \\tfrac{1}{a^n}"],
+    ["對數定義", "a^x = b \\iff x = \\log_a b"],
+    ["對數律", "\\log xy = \\log x + \\log y,\\quad \\log x^n = n\\log x"],
+    ["換底公式", "\\log_a b = \\dfrac{\\log_c b}{\\log_c a}"],
+  ]],
+  ["linecircle", [
+    ["斜率", "m = \\dfrac{y_2-y_1}{x_2-x_1}"],
+    ["點斜式", "y - y_1 = m(x - x_1)"],
+    ["兩直線垂直", "m_1 m_2 = -1"],
+    ["點到直線距離", "d = \\dfrac{|ax_0+by_0+c|}{\\sqrt{a^2+b^2}}"],
+    ["圓的標準式", "(x-h)^2 + (y-k)^2 = r^2"],
+  ]],
+  ["sequence", [
+    ["等差數列／級數", "a_n = a_1 + (n-1)d,\\quad S_n = \\tfrac{n(a_1+a_n)}{2}"],
+    ["等比數列／級數", "a_n = a_1 r^{n-1},\\quad S_n = \\tfrac{a_1(1-r^n)}{1-r}"],
+    ["無窮等比級數", "S = \\dfrac{a_1}{1-r}\\quad(|r|<1)"],
+    ["求和公式", "\\sum k = \\tfrac{n(n+1)}{2},\\quad \\sum k^2 = \\tfrac{n(n+1)(2n+1)}{6}"],
+  ]],
+  ["statistics", [
+    ["平均數與標準差", "\\bar{x} = \\tfrac{1}{n}\\sum x_i,\\quad \\sigma = \\sqrt{\\tfrac{1}{n}\\sum (x_i-\\bar{x})^2}"],
+    ["相關係數", "r = \\dfrac{\\sum (x_i-\\bar{x})(y_i-\\bar{y})}{n\\,\\sigma_x\\sigma_y}"],
+    ["回歸直線", "y - \\bar{y} = r\\,\\tfrac{\\sigma_y}{\\sigma_x}(x-\\bar{x})"],
+  ]],
+  ["probability", [
+    ["排列", "P^n_k = \\dfrac{n!}{(n-k)!}"],
+    ["組合", "C^n_k = \\dfrac{n!}{k!(n-k)!}"],
+    ["二項式定理", "(a+b)^n = \\sum_{k=0}^{n} C^n_k\\, a^{n-k} b^k"],
+    ["期望值", "E(X) = \\sum x_i p_i"],
+  ]],
+  ["trig", [
+    ["平方關係", "\\sin^2\\theta + \\cos^2\\theta = 1"],
+    ["正弦定理", "\\dfrac{a}{\\sin A} = \\dfrac{b}{\\sin B} = \\dfrac{c}{\\sin C} = 2R"],
+    ["餘弦定理", "c^2 = a^2 + b^2 - 2ab\\cos C"],
+    ["三角形面積", "\\triangle = \\tfrac{1}{2}ab\\sin C"],
+    ["和角公式", "\\sin(\\alpha\\pm\\beta) = \\sin\\alpha\\cos\\beta \\pm \\cos\\alpha\\sin\\beta"],
+    ["餘弦和角", "\\cos(\\alpha\\pm\\beta) = \\cos\\alpha\\cos\\beta \\mp \\sin\\alpha\\sin\\beta"],
+    ["倍角公式", "\\sin 2\\theta = 2\\sin\\theta\\cos\\theta,\\quad \\cos 2\\theta = 1 - 2\\sin^2\\theta"],
+    ["正餘弦疊合", "a\\sin\\theta + b\\cos\\theta = \\sqrt{a^2+b^2}\\,\\sin(\\theta+\\varphi)"],
+    ["弧度", "180^\\circ = \\pi\\ \\text{rad},\\quad \\text{弧長}\\ s = r\\theta"],
+  ]],
+  ["vector", [
+    ["內積", "\\vec{u}\\cdot\\vec{v} = u_1v_1 + u_2v_2 = |\\vec{u}||\\vec{v}|\\cos\\theta"],
+    ["正射影", "\\dfrac{\\vec{u}\\cdot\\vec{v}}{|\\vec{v}|^2}\\,\\vec{v}"],
+    ["面積與行列式", "\\text{平行四邊形面積} = \\left|\\begin{vmatrix}u_1&u_2\\\\v_1&v_2\\end{vmatrix}\\right|"],
+    ["柯西不等式", "(a_1^2+a_2^2)(b_1^2+b_2^2) \\ge (a_1b_1+a_2b_2)^2"],
+  ]],
+  ["spacevector", [
+    ["空間距離", "\\sqrt{(x_2-x_1)^2+(y_2-y_1)^2+(z_2-z_1)^2}"],
+    ["外積長度", "|\\vec{u}\\times\\vec{v}| = |\\vec{u}||\\vec{v}|\\sin\\theta"],
+    ["平行六面體體積", "V = |(\\vec{u}\\times\\vec{v})\\cdot\\vec{w}|"],
+  ]],
+  ["spaceplane", [
+    ["平面方程式", "ax + by + cz = d,\\quad \\vec{n} = (a,b,c)"],
+    ["點到平面距離", "\\dfrac{|ax_0+by_0+cz_0-d|}{\\sqrt{a^2+b^2+c^2}}"],
+    ["直線參數式", "(x,y,z) = (x_0,y_0,z_0) + t(l,m,n)"],
+  ]],
+  ["matrix", [
+    ["二階行列式", "\\det\\begin{bmatrix}a&b\\\\c&d\\end{bmatrix} = ad-bc"],
+    ["反方陣", "A^{-1} = \\dfrac{1}{ad-bc}\\begin{bmatrix}d&-b\\\\-c&a\\end{bmatrix}"],
+    ["旋轉矩陣", "\\begin{bmatrix}\\cos\\theta&-\\sin\\theta\\\\\\sin\\theta&\\cos\\theta\\end{bmatrix}"],
+  ]],
+  ["bayes", [
+    ["條件機率", "P(A\\mid B) = \\dfrac{P(A\\cap B)}{P(B)}"],
+    ["貝氏定理", "P(A\\mid B) = \\dfrac{P(A)P(B\\mid A)}{P(A)P(B\\mid A)+P(A')P(B\\mid A')}"],
+    ["獨立事件", "P(A\\cap B) = P(A)P(B)"],
+  ]],
+  ["conics", [
+    ["橢圓", "\\dfrac{x^2}{a^2}+\\dfrac{y^2}{b^2}=1,\\quad c^2=a^2-b^2"],
+    ["雙曲線", "\\dfrac{x^2}{a^2}-\\dfrac{y^2}{b^2}=1,\\quad c^2=a^2+b^2"],
+    ["拋物線", "y^2 = 4cx,\\ \\text{焦點}(c,0),\\ \\text{準線}\\ x=-c"],
+  ]],
+  ["calculus", [
+    ["導數定義", "f'(a) = \\lim_{h\\to0}\\dfrac{f(a+h)-f(a)}{h}"],
+    ["冪次法則", "(x^n)' = nx^{n-1}"],
+    ["乘法法則", "(fg)' = f'g + fg'"],
+    ["連鎖律", "\\big(f(g(x))\\big)' = f'(g(x))\\,g'(x)"],
+  ]],
+  ["integral", [
+    ["反導函數", "\\int x^n\\,dx = \\dfrac{x^{n+1}}{n+1}+C"],
+    ["微積分基本定理", "\\int_a^b f(x)\\,dx = F(b)-F(a)"],
+  ]],
+  ["complex", [
+    ["極式", "z = r(\\cos\\theta + i\\sin\\theta)"],
+    ["棣美弗定理", "(\\cos\\theta+i\\sin\\theta)^n = \\cos n\\theta + i\\sin n\\theta"],
+  ]],
+  ["binomial", [
+    ["二項分布", "P(X=k) = C^n_k\\,p^k(1-p)^{n-k}"],
+    ["期望值與變異數", "E(X) = np,\\quad \\mathrm{Var}(X) = np(1-p)"],
+  ]],
+];
+
+const list = document.getElementById("list");
+function render(kw) {
+  kw = kw.trim().toLowerCase();
+  list.innerHTML = "";
+  let shown = 0;
+  F.forEach(([key, items]) => {
+    const u = UNITS.find(x => x.key === key);
+    const hit = items.filter(([name]) => !kw || name.toLowerCase().includes(kw) || u.title.toLowerCase().includes(kw));
+    if (!hit.length) return;
+    shown += hit.length;
+    const sec = document.createElement("div"); sec.className = "section"; sec.style.marginTop = "1.8rem";
+    sec.innerHTML = `<h2>${u.icon} ${u.title} <a class="ulink" style="--uc:${u.c};margin-left:.5rem" href="../units/${u.key}.html">前往互動單元 →</a></h2>
+      <div class="formulas">${hit.map(([name, tex]) => `<div class="formula"><div class="name">${name}</div><div class="math">$$${tex}$$</div></div>`).join("")}</div>`;
+    list.appendChild(sec);
+  });
+  if (!shown) list.innerHTML = `<p class="empty">找不到符合「${kw.replace(/[<>&]/g, "")}」的公式</p>`;
+  if (window.renderMathInElement) renderMathInElement(list, katexOpt);
+}
+document.getElementById("q").addEventListener("input", e => render(e.target.value));
+render("");
+</script>
+</body>
+</html>

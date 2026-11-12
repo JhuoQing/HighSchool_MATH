@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>極速心算｜高中數學視覺實驗室</title>
+<meta name="theme-color" content="#0b101c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="../js/data.js"></script>
+<script src="../js/common.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, katexOpt)"></script>
+</head>
+<body>
+<main class="page">
+  <h1>⚡ 極速心算</h1>
+  <p class="subtitle">60 秒限時挑戰：對數、三角、微分、組合、向量…… 連續答對有連擊加成！</p>
+
+  <div class="lab">
+    <div class="hud">
+      <div class="box"><small>剩餘時間</small><b id="h-time">60</b></div>
+      <div class="box"><small>得分</small><b id="h-score">0</b></div>
+      <div class="box"><small>連擊</small><b id="h-combo">0</b></div>
+      <div class="box"><small>最高分</small><b id="h-best">0</b></div>
+    </div>
+    <div class="progress-bar"><i id="tbar" style="width:100%"></i></div>
+    <div class="qbig" id="q">準備好了嗎？</div>
+    <div class="bigopts" id="opts"></div>
+    <div class="btn-row" style="justify-content:center">
+      <button class="btn primary" id="b-start" style="font-size:1.1rem;padding:.7rem 2rem">▶ 開始挑戰</button>
+    </div>
+    <div class="msg" id="msg" style="text-align:center"></div>
+  </div>
+
+  <div class="section">
+    <h2>玩法</h2>
+    <ul class="rules">
+      <li>答對得 10 分 × 連擊倍率（每連對 3 題倍率 +1，最高 ×5）。</li>
+      <li>答錯扣 3 秒、連擊歸零。題目會隨著連擊數變難。</li>
+      <li>題型涵蓋：指數律、對數、三角函數值、導數、排列組合、內積、行列式、數列、定積分、複數絕對值。</li>
+    </ul>
+  </div>
+</main>
+<footer>高中數學視覺實驗室</footer>
+
+<script>
+injectNav(true);
+const $ = id => document.getElementById(id);
+const ri = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const pick = arr => arr[ri(0, arr.length - 1)];
+const sub = n => String(n).split("").map(d => "₀₁₂₃₄₅₆₇₈₉"[d]).join("");
+const sup = n => String(n).split("").map(d => d === "-" ? "⁻" : "⁰¹²³⁴⁵⁶⁷⁸⁹"[d]).join("");
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = ri(0, i); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+/** 數字題：產生正確答案 + 3 個相近的干擾選項 */
+function numQ(q, ans) {
+  const set = new Set([ans]);
+  const deltas = shuffle([1, -1, 2, -2, 3, -3, 5, -5, 10, -10, ans, -ans * 2].filter(d => d !== 0));
+  for (const d of deltas) { if (set.size >= 4) break; set.add(ans + d); }
+  let k = 4; while (set.size < 4) set.add(ans + k++);
+  return { q, opts: shuffle([...set].map(String)), ans: String(ans) };
+}
+const fact = n => n <= 1 ? 1 : n * fact(n - 1);
+const C = (n, k) => fact(n) / (fact(k) * fact(n - k));
+
+const TRIG = {
+  sin: { 0:"0", 30:"1/2", 45:"√2/2", 60:"√3/2", 90:"1", 120:"√3/2", 135:"√2/2", 150:"1/2", 180:"0", 210:"−1/2", 225:"−√2/2", 240:"−√3/2", 270:"−1", 300:"−√3/2", 315:"−√2/2", 330:"−1/2" },
+  cos: { 0:"1", 30:"√3/2", 45:"√2/2", 60:"1/2", 90:"0", 120:"−1/2", 135:"−√2/2", 150:"−√3/2", 180:"−1", 210:"−√3/2", 225:"−√2/2", 240:"−1/2", 270:"0", 300:"1/2", 315:"√2/2", 330:"√3/2" },
+  tan: { 0:"0", 30:"√3/3", 45:"1", 60:"√3", 120:"−√3", 135:"−1", 150:"−√3/3", 180:"0", 210:"√3/3", 225:"1", 240:"√3", 300:"−√3", 315:"−1", 330:"−√3/3" },
+};
+const TRIGVALS = ["0","1","−1","1/2","−1/2","√2/2","−√2/2","√3/2","−√3/2","√3","−√3","√3/3","−√3/3"];
+
+/* 題型產生器；hard 為 0（基礎）～2（進階） */
+const GEN = [
+  h => { const b = pick([2, 3, 5, 10]), k = ri(1, b === 2 ? 6 + h * 2 : b === 10 ? 4 : 3 + h); return numQ(`log${sub(b)} ${Math.pow(b, k)} = ?`, k); },
+  h => { const b = pick([2, 3, 5]), m = ri(2, 5 + h), n = ri(2, 5 + h); return Math.random() < 0.5 ? numQ(`${b}${sup(m)} × ${b}${sup(n)} = ${b}^?`, m + n) : numQ(`(${b}${sup(m)})${sup(n)} = ${b}^?`, m * n); },
+  h => {
+    const fn = pick(h ? ["sin", "cos", "tan"] : ["sin", "cos"]);
+    const angs = Object.keys(TRIG[fn]).map(Number).filter(a => h >= 1 || a <= 180);
+    const a = pick(angs), ans = TRIG[fn][a];
+    const opts = new Set([ans]); while (opts.size < 4) opts.add(pick(TRIGVALS));
+    return { q: `${fn} ${a}° = ?`, opts: shuffle([...opts]), ans };
+  },
+  h => { const a = ri(1, 3 + h), n = ri(2, 3 + (h > 1)), b = ri(1, 6), c = ri(1, 3); return numQ(`f(x) = ${a === 1 ? "" : a}x${sup(n)} + ${b}x，f′(${c}) = ?`, a * n * Math.pow(c, n - 1) + b); },
+  h => { const n = ri(4, 6 + h * 2), k = ri(2, Math.min(3 + h, n - 1)); return Math.random() < 0.6 ? numQ(`C(${n}, ${k}) = ?`, C(n, k)) : numQ(`P(${n}, 2) = ?`, n * (n - 1)); },
+  h => { const r = 3 + h * 3, a = [ri(-r, r), ri(-r, r)], b = [ri(-r, r), ri(-r, r)]; return numQ(`(${a[0]}, ${a[1]}) · (${b[0]}, ${b[1]}) = ?`, a[0] * b[0] + a[1] * b[1]); },
+  h => { const r = 4 + h * 3, m = [ri(-r, r), ri(-r, r), ri(-r, r), ri(-r, r)]; return numQ(`det [ ${m[0]}  ${m[1]} ; ${m[2]}  ${m[3]} ] = ?`, m[0] * m[3] - m[1] * m[2]); },
+  h => { const a = ri(1, 9), d = ri(2, 5 + h * 2), n = ri(5, 10 + h * 10); return numQ(`等差數列 a₁ = ${a}、d = ${d}，a${sub(n)} = ?`, a + (n - 1) * d); },
+  h => { const k = pick([2, 4, 6]), a = ri(1, 3 + h); return numQ(`∫ ${k}x dx（從 0 到 ${a}）= ?`, k * a * a / 2); },
+  h => { const [a, b, c] = pick([[3,4,5],[5,12,13],[6,8,10],[8,15,17],[7,24,25],[9,12,15]]); const s1 = pick([1, -1]), s2 = pick(["+", "−"]); return numQ(`|${s1 * a} ${s2} ${b}i| = ?`, c); },
+  h => { const n = ri(3, 5 + h * 2); return numQ(`1 + 2 + 4 + ⋯ + 2${sup(n)} = ?`, Math.pow(2, n + 1) - 1); },
+];
+
+let time = 60, score = 0, combo = 0, cur = null, timer = null, running = false, count = 0, right = 0;
+let best = +(localStorage.getItem("speed-best") || 0);
+$("h-best").textContent = best;
+
+function next() {
+  const h = combo >= 8 ? 2 : combo >= 3 ? 1 : 0;
+  cur = pick(GEN)(h);
+  $("q").textContent = cur.q;
+  const box = $("opts"); box.innerHTML = "";
+  cur.opts.forEach(o => {
+    const b = document.createElement("button");
+    b.className = "btn"; b.textContent = o;
+    b.onclick = () => answer(o, b);
+    box.appendChild(b);
+  });
+}
+function answer(o, btn) {
+  if (!running) return;
+  count++;
+  if (o === cur.ans) {
+    combo++; right++;
+    const mult = Math.min(1 + Math.floor(combo / 3), 5);
+    score += 10 * mult;
+    $("msg").textContent = mult > 1 ? `✓ 連擊 ×${mult}！` : "✓"; $("msg").className = "msg ok";
+    hud(); next();
+  } else {
+    combo = 0; time = Math.max(0, time - 3);
+    $("msg").textContent = `✗ ${cur.q.replace(" = ?", "")} 的答案是 ${cur.ans}（−3 秒）`; $("msg").className = "msg bad";
+    btn.style.borderColor = "var(--err)";
+    hud(); setTimeout(() => running && next(), 650);
+  }
+}
+function hud() {
+  $("h-time").textContent = Math.ceil(time); $("h-score").textContent = score; $("h-combo").textContent = combo;
+  $("tbar").style.width = (time / 60 * 100) + "%";
+}
+function finish() {
+  running = false; clearInterval(timer);
+  const isBest = score > best;
+  if (isBest) { best = score; localStorage.setItem("speed-best", best); $("h-best").textContent = best; }
+  $("q").textContent = `時間到！得分 ${score}`;
+  $("opts").innerHTML = "";
+  $("msg").textContent = `答對 ${right} / ${count} 題` + (isBest ? "　🏆 新紀錄！" : "");
+  $("msg").className = "msg ok";
+  $("b-start").style.display = ""; $("b-start").textContent = "↻ 再挑戰一次";
+}
+$("b-start").onclick = () => {
+  time = 60; score = 0; combo = 0; count = 0; right = 0; running = true;
+  $("b-start").style.display = "none"; $("msg").textContent = "";
+  hud(); next();
+  clearInterval(timer);
+  timer = setInterval(() => { time -= 0.1; if (time <= 0) { time = 0; hud(); finish(); } else hud(); }, 100);
+};
+</script>
+</body>
+</html>

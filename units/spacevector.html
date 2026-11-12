@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>空間向量｜高中數學視覺實驗室</title>
+<meta name="theme-color" content="#0b101c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="../js/data.js"></script>
+<script src="../js/common.js"></script>
+<script src="../js/plot3d.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, katexOpt)"></script>
+</head>
+<body>
+<main class="page">
+  <h1>🧊 空間向量</h1>
+  <p class="subtitle">從平面走進空間 —— <b>用手指或滑鼠拖曳畫面可旋轉視角</b>，滾輪／雙指可縮放。</p>
+
+  <div class="section">
+    <h2>實驗一：空間坐標</h2>
+    <p>點 $P(x, y, z)$ 的三個坐標，分別是它沿 $x$、$y$、$z$ 軸方向走的距離。虛線長方體讓你看見 $P$ 是怎麼「走」到的，$Q$ 是 $P$ 在 $xy$ 平面上的投影：</p>
+    <div class="lab">
+      <canvas id="c1"></canvas>
+      <div class="controls">
+        <div class="ctrl"><label for="s-x">x <b></b></label><input type="range" id="s-x" min="-4" max="4" step="0.5" value="3"></div>
+        <div class="ctrl"><label for="s-y">y <b></b></label><input type="range" id="s-y" min="-4" max="4" step="0.5" value="2"></div>
+        <div class="ctrl"><label for="s-z">z <b></b></label><input type="range" id="s-z" min="-2" max="4" step="0.5" value="3"></div>
+      </div>
+      <div class="readout" id="r1"></div>
+    </div>
+    <div class="note">$\overline{OP}$ 是長方體的對角線：先在地板上用畢氏定理得 $\overline{OQ}=\sqrt{x^2+y^2}$，再往上用一次畢氏定理，就得到 $\overline{OP}=\sqrt{x^2+y^2+z^2}$。</div>
+  </div>
+
+  <div class="section">
+    <h2>實驗二：外積 —— 同時垂直兩個向量</h2>
+    <p>$\vec{u}\times\vec{v}$（紅）永遠<b>同時垂直</b> $\vec{u}$（藍）與 $\vec{v}$（橘），而且它的長度恰好等於兩向量張出的<b>平行四邊形面積</b>。轉動視角從各個方向確認看看：</p>
+    <div class="lab">
+      <canvas id="c2"></canvas>
+      <div class="controls">
+        <div class="ctrl"><label for="u1">u₁ <b></b></label><input type="range" id="u1" min="-3" max="3" step="0.5" value="2"></div>
+        <div class="ctrl"><label for="u2">u₂ <b></b></label><input type="range" id="u2" min="-3" max="3" step="0.5" value="1"></div>
+        <div class="ctrl"><label for="u3">u₃ <b></b></label><input type="range" id="u3" min="-3" max="3" step="0.5" value="0"></div>
+      </div>
+      <div class="controls">
+        <div class="ctrl"><label for="v1">v₁ <b></b></label><input type="range" id="v1" min="-3" max="3" step="0.5" value="0"></div>
+        <div class="ctrl"><label for="v2">v₂ <b></b></label><input type="range" id="v2" min="-3" max="3" step="0.5" value="2"></div>
+        <div class="ctrl"><label for="v3">v₃ <b></b></label><input type="range" id="v3" min="-3" max="3" step="0.5" value="1"></div>
+      </div>
+      <div class="readout" id="r2"></div>
+    </div>
+    <div class="note">把 $\vec{u}$、$\vec{v}$ 調成平行（例如 $\vec{v} = 2\vec{u}$）—— 平行四邊形被壓扁、面積為 0，外積也變成零向量。交換 $\vec{u}$、$\vec{v}$ 的角色，外積方向會反過來（右手定則）。</div>
+  </div>
+
+  <div class="section">
+    <h2>關鍵公式</h2>
+    <div class="formulas">
+      <div class="formula"><div class="name">空間兩點距離</div><div class="math">$$\overline{PQ} = \sqrt{(x_2-x_1)^2+(y_2-y_1)^2+(z_2-z_1)^2}$$</div></div>
+      <div class="formula"><div class="name">內積</div><div class="math">$$\vec{u}\cdot\vec{v} = u_1v_1+u_2v_2+u_3v_3 = |\vec{u}||\vec{v}|\cos\theta$$</div></div>
+      <div class="formula"><div class="name">外積</div><div class="math">$$\vec{u}\times\vec{v} = \left(\begin{vmatrix}u_2&u_3\\v_2&v_3\end{vmatrix},\ \begin{vmatrix}u_3&u_1\\v_3&v_1\end{vmatrix},\ \begin{vmatrix}u_1&u_2\\v_1&v_2\end{vmatrix}\right)$$</div></div>
+      <div class="formula"><div class="name">外積的長度 = 平行四邊形面積</div><div class="math">$$|\vec{u}\times\vec{v}| = |\vec{u}||\vec{v}|\sin\theta$$</div></div>
+    </div>
+  </div>
+
+  <div class="section"><h2>小測驗</h2><div id="quiz"></div></div>
+  <div class="unit-nav"></div>
+</main>
+<footer>高中數學視覺實驗室</footer>
+
+<script>
+injectNav(true);
+const f1 = v => (+v.toFixed(2)).toString();
+
+// 實驗一：空間坐標
+const g1 = new Plot3D(document.getElementById("c1"), { range: 5 });
+let P = [3, 2, 3];
+g1.redraw = () => {
+  const [x, y, z] = P, dim = cssVar("--text-dim");
+  g1.begin(); g1.axes(4);
+  // 長方體虛線
+  const e = (a, b, col = dim, w = 1.2) => g1.line(a, b, col, w, [5, 4]);
+  e([x,0,0],[x,y,0]); e([0,y,0],[x,y,0]); e([x,y,0],[x,y,z], cssVar("--curve3"), 2);
+  e([x,0,0],[x,0,z]); e([0,y,0],[0,y,z]); e([0,0,z],[x,0,z]); e([0,0,z],[0,y,z]);
+  e([x,0,z],[x,y,z]); e([0,y,z],[x,y,z]);
+  g1.line([0,0,0],[x,y,0], cssVar("--curve2"), 2, [6,4]);       // OQ
+  g1.arrow([0,0,0],[x,y,z], cssVar("--curve1"), 3);             // OP
+  g1.poly([[0,0,0],[x,0,0],[x,y,0],[0,y,0]], cssVar("--curve2"), null, 0.12);
+  g1.point([x,y,0], cssVar("--curve2"), 5, "Q");
+  g1.point([x,y,z], cssVar("--curve4"), 7, `P(${f1(x)}, ${f1(y)}, ${f1(z)})`);
+  g1.point([0,0,0], cssVar("--axis"), 4, "O");
+  g1.end();
+  document.getElementById("r1").innerHTML =
+    `OQ = √(x²+y²) = <b>${Math.hypot(x,y).toFixed(3)}</b>　OP = √(x²+y²+z²) = <b>${Math.hypot(x,y,z).toFixed(3)}</b>　P 到 xy 平面距離 = |z| = <b>${Math.abs(z)}</b>`;
+};
+bindSlider("s-x", v => { P[0] = v; g1.redraw(); });
+bindSlider("s-y", v => { P[1] = v; g1.redraw(); });
+bindSlider("s-z", v => { P[2] = v; g1.redraw(); });
+
+// 實驗二：外積
+const g2 = new Plot3D(document.getElementById("c2"), { range: 6, yaw: -0.9 });
+let U = [2, 1, 0], V = [0, 2, 1];
+const cross = (a, b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
+const dot = (a, b) => a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+g2.redraw = () => {
+  const C = cross(U, V), S = [U[0]+V[0], U[1]+V[1], U[2]+V[2]];
+  g2.begin(); g2.axes(4);
+  g2.poly([[0,0,0], U, S, V], cssVar("--curve3"), cssVar("--curve3"), 0.25);
+  g2.arrow([0,0,0], U, cssVar("--curve1"), 3.5, "u");
+  g2.arrow([0,0,0], V, cssVar("--curve2"), 3.5, "v");
+  g2.arrow([0,0,0], C, cssVar("--curve4"), 3.5, "u×v");
+  g2.end();
+  const lu = Math.hypot(...U), lv = Math.hypot(...V), area = Math.hypot(...C);
+  const ang = (lu && lv) ? Math.acos(Math.max(-1, Math.min(1, dot(U,V)/(lu*lv)))) * 180/Math.PI : 0;
+  document.getElementById("r2").innerHTML =
+    `u×v = (<b>${f1(C[0])}</b>, <b>${f1(C[1])}</b>, <b>${f1(C[2])}</b>)　|u×v| = 平行四邊形面積 = <b>${area.toFixed(3)}</b><br>` +
+    `u·v = <b>${f1(dot(U,V))}</b>　夾角 ≈ <b>${ang.toFixed(1)}°</b>　驗證垂直：(u×v)·u = <b>${f1(dot(C,U))}</b>、(u×v)·v = <b>${f1(dot(C,V))}</b>`;
+};
+["u1","u2","u3"].forEach((id, k) => bindSlider(id, v => { U[k] = v; g2.redraw(); }));
+["v1","v2","v3"].forEach((id, k) => bindSlider(id, v => { V[k] = v; g2.redraw(); }));
+
+renderQuiz("quiz", [
+  { q:"向量 $\\vec{u} = (1, 2, 2)$ 的長度是？",
+    opts:["$3$","$5$","$\\sqrt{5}$","$9$"], ans:0,
+    expl:"$|\\vec{u}| = \\sqrt{1+4+4} = \\sqrt{9} = 3$。" },
+  { q:"$(1,0,0)\\times(0,1,0) = ?$",
+    opts:["$(0,0,0)$","$(1,1,0)$","$(0,0,1)$","$(0,0,-1)$"], ans:2,
+    expl:"x 軸方向外積 y 軸方向 = z 軸方向（右手定則）。可在實驗二把 u 設成 (1,0,0)、v 設成 (0,1,0) 驗證。" },
+  { q:"$\\vec{u}=(1,2,3)$、$\\vec{v}=(2,-1,0)$，兩向量的關係是？",
+    opts:["平行","垂直","夾角 60°","無法判斷"], ans:1,
+    expl:"內積 $= 2 - 2 + 0 = 0$，所以垂直。空間向量判斷垂直的方法和平面一樣！" },
+], "spacevector");
+</script>
+</body>
+</html>

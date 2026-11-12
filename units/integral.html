@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>積分｜高中數學視覺實驗室</title>
+<meta name="theme-color" content="#0b101c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="../js/data.js"></script>
+<script src="../js/common.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, katexOpt)"></script>
+</head>
+<body>
+<main class="page">
+  <h1>📐 積分</h1>
+  <p class="subtitle">算曲線下的面積？先用矩形湊，再把矩形切到無限細。</p>
+
+  <div class="section">
+    <h2>實驗一：黎曼和 —— 用矩形逼近面積</h2>
+    <p>要算 $f(x) = x^2$ 在 $[0, 3]$ 下方的面積。把區間切成 $n$ 等份、每份立一個矩形。<b>把 $n$ 拉大</b>，矩形面積總和會逼近真正的面積 $9$：</p>
+    <div class="lab">
+      <canvas id="c1"></canvas>
+      <div class="controls">
+        <div class="ctrl" style="flex:2"><label for="s-n">矩形個數 n <b></b></label><input type="range" id="s-n" min="1" max="120" step="1" value="6"></div>
+        <div class="ctrl"><label for="sel-m">取樣點</label>
+          <select id="sel-m"><option value="0">左端點（低估）</option><option value="1">右端點（高估）</option><option value="0.5">中點</option></select>
+        </div>
+      </div>
+      <div class="readout" id="r1"></div>
+    </div>
+    <div class="note">左端點永遠低估、右端點永遠高估（因為 $x^2$ 遞增），真正的面積被夾在中間。$n\to\infty$ 時兩者都收斂到同一個值 —— 這就是<b>定積分</b>的定義。</div>
+  </div>
+
+  <div class="section">
+    <h2>實驗二：微積分基本定理</h2>
+    <p>令 $A(x) = \displaystyle\int_0^x f(t)\,dt$ 為「從 0 累積到 $x$ 的有號面積」，其中 $f(t) = t^2 - 2t$（藍）。拖動 $x$，橘色曲線記錄累積面積 $A(x)$：</p>
+    <div class="lab">
+      <canvas id="c2"></canvas>
+      <div class="controls">
+        <div class="ctrl" style="flex:2"><label for="s-x">上限 x <b></b></label><input type="range" id="s-x" min="0" max="3.6" step="0.02" value="1.2"></div>
+      </div>
+      <div class="readout" id="r2"></div>
+    </div>
+    <div class="note">$f &lt; 0$ 的區段（紅色）面積算<b>負的</b>，所以 $A(x)$ 下降；過了 $t=2$ 之後 $f &gt; 0$（綠色），$A(x)$ 開始回升。$A(x)$ 的斜率正好就是 $f(x)$ —— 微分與積分互為逆運算！</div>
+  </div>
+
+  <div class="section">
+    <h2>關鍵公式</h2>
+    <div class="formulas">
+      <div class="formula"><div class="name">定積分（黎曼和的極限）</div><div class="math">$$\int_a^b f(x)\,dx = \lim_{n\to\infty}\sum_{k=1}^{n} f(x_k)\,\Delta x$$</div></div>
+      <div class="formula"><div class="name">冪次的反導函數</div><div class="math">$$\int x^n\,dx = \frac{x^{n+1}}{n+1} + C\quad(n\neq-1)$$</div></div>
+      <div class="formula"><div class="name">微積分基本定理</div><div class="math">$$\int_a^b f(x)\,dx = F(b) - F(a),\quad F'(x) = f(x)$$</div></div>
+      <div class="formula"><div class="name">兩曲線間的面積</div><div class="math">$$\text{面積} = \int_a^b \big|f(x) - g(x)\big|\,dx$$</div></div>
+    </div>
+  </div>
+
+  <div class="section"><h2>小測驗</h2><div id="quiz"></div></div>
+  <div class="unit-nav"></div>
+</main>
+<footer>高中數學視覺實驗室</footer>
+
+<script>
+injectNav(true);
+
+// 實驗一：黎曼和
+const f = x => x * x;
+const p1 = new Plot(document.getElementById("c1"), { xmin:-0.4, xmax:3.5, ymin:-0.8, ymax:10, heightPx:400 });
+let n = 6, mode = 0;
+p1.redraw = () => {
+  p1.clear(); p1.grid(1); p1.axes(1);
+  const dx = 3 / n; let sum = 0;
+  const col = cssVar("--curve3");
+  for (let k = 0; k < n; k++) {
+    const x0 = k * dx, h = f(x0 + mode * dx);
+    sum += h * dx;
+    p1.polygon([[x0,0],[x0+dx,0],[x0+dx,h],[x0,h]], col, 0.35, n <= 60 ? col : null, 1);
+  }
+  p1.fn(f, cssVar("--curve1"), 3);
+  p1.line(3, 0, 3, 9, cssVar("--text-dim"), 1, [4,4]);
+  document.getElementById("r1").innerHTML =
+    `矩形面積和 = <b>${sum.toFixed(4)}</b>　真實面積 = <b>9</b>　誤差 = <b style="color:var(--warn)">${Math.abs(sum-9).toFixed(4)}</b>`;
+};
+bindSlider("s-n", v => { n = v; p1.redraw(); });
+document.getElementById("sel-m").onchange = e => { mode = parseFloat(e.target.value); p1.redraw(); };
+
+// 實驗二：微積分基本定理
+const g = t => t*t - 2*t, G = x => x*x*x/3 - x*x;
+const p2 = new Plot(document.getElementById("c2"), { xmin:-0.4, xmax:3.9, ymin:-2, ymax:4.5, heightPx:400 });
+let X = 1.2;
+p2.redraw = () => {
+  p2.clear(); p2.grid(1); p2.axes(1);
+  // 有號面積著色
+  const shade = (a, b, col) => {
+    if (b <= a) return;
+    const pts = [[a, 0]];
+    for (let i = 0; i <= 40; i++) { const t = a + (b - a) * i / 40; pts.push([t, g(t)]); }
+    pts.push([b, 0]);
+    p2.polygon(pts, col, 0.4);
+  };
+  shade(0, Math.min(X, 2), cssVar("--curve4"));
+  shade(2, X, cssVar("--curve3"));
+  p2.fn(g, cssVar("--curve1"), 3);
+  // A(x) 軌跡
+  p2.param(t => t, t => G(t), 0, Math.max(X, 0.001), cssVar("--curve2"), 3, 200);
+  p2.line(X, p2.ymin, X, p2.ymax, cssVar("--text-dim"), 1, [4,4]);
+  p2.point(X, g(X), cssVar("--curve1"), 5, "f(x)");
+  p2.point(X, G(X), cssVar("--curve2"), 6, "A(x)");
+  document.getElementById("r2").innerHTML =
+    `x = <b>${X.toFixed(2)}</b>　累積面積 A(x) = x³/3 − x² = <b>${G(X).toFixed(3)}</b>　此處 f(x) = <b>${g(X).toFixed(3)}</b> = A(x) 的斜率`;
+};
+bindSlider("s-x", v => { X = v; p2.redraw(); }, v => v.toFixed(2));
+
+renderQuiz("quiz", [
+  { q:"$\\displaystyle\\int_0^2 3x^2\\,dx = ?$",
+    opts:["$6$","$8$","$12$","$24$"], ans:1,
+    expl:"反導函數 $F(x) = x^3$，$F(2) - F(0) = 8 - 0 = 8$。" },
+  { q:"$\\displaystyle\\int_0^1 (2x+1)\\,dx = ?$",
+    opts:["$1$","$2$","$3$","$\\frac{3}{2}$"], ans:1,
+    expl:"$F(x) = x^2 + x$，$F(1) - F(0) = 2$。也可以直接算梯形面積：$\\frac{(1+3)\\times1}{2} = 2$。" },
+  { q:"若 $f(x) < 0$ 在 $[a,b]$ 上恆成立，則 $\\int_a^b f(x)\\,dx$？",
+    opts:["一定是正的","一定是負的","一定是 0","無法判斷"], ans:1,
+    expl:"定積分算的是「有號面積」，x 軸下方的區域計為負 —— 實驗二的紅色區段。" },
+], "integral");
+</script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>數列與級數｜高中數學視覺實驗室</title>
+<meta name="theme-color" content="#0b101c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="../js/data.js"></script>
+<script src="../js/common.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, katexOpt)"></script>
+</head>
+<body>
+<main class="page">
+  <h1>🔢 數列與級數</h1>
+  <p class="subtitle">等差是「加」出來的直線，等比是「乘」出來的曲線。</p>
+
+  <div class="section">
+    <h2>實驗一：等差 vs. 等比</h2>
+    <p>同樣的首項 $a_1$：等差數列每次<b>加</b>公差 $d$（藍點排成直線），等比數列每次<b>乘</b>公比 $r$（橘點彎成曲線）。調整看看：</p>
+    <div class="lab">
+      <canvas id="c1"></canvas>
+      <div class="controls">
+        <div class="ctrl"><label for="s-a1">首項 a₁ <b></b></label><input type="range" id="s-a1" min="-5" max="5" step="0.5" value="1"></div>
+        <div class="ctrl"><label for="s-d">公差 d <b></b></label><input type="range" id="s-d" min="-3" max="3" step="0.25" value="1.5"></div>
+        <div class="ctrl"><label for="s-r">公比 r <b></b></label><input type="range" id="s-r" min="-2" max="2" step="0.05" value="1.3"></div>
+      </div>
+      <div class="readout" id="r1"></div>
+    </div>
+    <div class="note">把公比 $r$ 拉成負數 —— 等比數列會正負交替「上下跳動」；$|r|&lt;1$ 時則越來越貼近 0。</div>
+  </div>
+
+  <div class="section">
+    <h2>實驗二：無窮等比級數會收斂嗎？</h2>
+    <p>把 $1 + r + r^2 + r^3 + \cdots$ 一項一項加起來，每個點是前 $n$ 項的和 $S_n$。當 $|r|&lt;1$ 時，部分和會逼近綠色虛線 $\dfrac{1}{1-r}$：</p>
+    <div class="lab">
+      <canvas id="c2"></canvas>
+      <div class="controls">
+        <div class="ctrl" style="flex:2"><label for="s-r2">公比 r <b></b></label><input type="range" id="s-r2" min="-1.2" max="1.2" step="0.01" value="0.5"></div>
+      </div>
+      <div class="readout" id="r2"></div>
+    </div>
+    <div class="note">$r = 0.5$ 時：$1 + \frac12 + \frac14 + \frac18 + \cdots = 2$。無限多項相加，答案卻是有限的！但只要 $|r| \ge 1$，和就會失控。</div>
+  </div>
+
+  <div class="section">
+    <h2>關鍵公式</h2>
+    <div class="formulas">
+      <div class="formula"><div class="name">等差數列與級數</div><div class="math">$$a_n = a_1 + (n-1)d,\qquad S_n = \frac{n(a_1 + a_n)}{2}$$</div></div>
+      <div class="formula"><div class="name">等比數列與級數</div><div class="math">$$a_n = a_1 r^{n-1},\qquad S_n = \frac{a_1(1-r^n)}{1-r}\ (r\neq1)$$</div></div>
+      <div class="formula"><div class="name">無窮等比級數</div><div class="math">$$\sum_{n=1}^{\infty} a_1 r^{n-1} = \frac{a_1}{1-r}\quad (|r|&lt;1)$$</div></div>
+      <div class="formula"><div class="name">常用求和公式</div><div class="math">$$\sum_{k=1}^{n} k = \frac{n(n+1)}{2},\qquad \sum_{k=1}^{n} k^2 = \frac{n(n+1)(2n+1)}{6}$$</div></div>
+    </div>
+  </div>
+
+  <div class="section"><h2>小測驗</h2><div id="quiz"></div></div>
+  <div class="unit-nav"></div>
+</main>
+<footer>高中數學視覺實驗室</footer>
+
+<script>
+injectNav(true);
+
+// 實驗一
+const p1 = new Plot(document.getElementById("c1"), { xmin:0, xmax:11, ymin:-10, ymax:20, heightPx:380 });
+let a1 = 1, dd = 1.5, rr = 1.3;
+p1.redraw = () => {
+  const ar = [], ge = [];
+  for (let n = 1; n <= 10; n++) { ar.push(a1 + (n-1)*dd); ge.push(a1 * Math.pow(rr, n-1)); }
+  const all = ar.concat(ge);
+  let lo = Math.min(0, ...all), hi = Math.max(0, ...all);
+  if (hi - lo < 4) { hi += 2; lo -= 2; }
+  const pad = (hi - lo) * 0.12;
+  p1.ymin = lo - pad; p1.ymax = hi + pad;
+  p1.clear(); p1.grid(1); p1.axes(1);
+  for (let i = 0; i < 9; i++) {
+    p1.line(i+1, ar[i], i+2, ar[i+1], cssVar("--curve1"), 1.5);
+    p1.line(i+1, ge[i], i+2, ge[i+1], cssVar("--curve2"), 1.5, [4,4]);
+  }
+  ar.forEach((v, i) => p1.point(i+1, v, cssVar("--curve1"), 5));
+  ge.forEach((v, i) => p1.point(i+1, v, cssVar("--curve2"), 5));
+  const sA = 10*(ar[0]+ar[9])/2;
+  const sG = Math.abs(rr-1) < 1e-9 ? 10*a1 : a1*(1-Math.pow(rr,10))/(1-rr);
+  document.getElementById("r1").innerHTML =
+    `<span style="color:var(--curve1)">● 等差</span>：a₁₀ = <b>${ar[9].toFixed(2)}</b>，S₁₀ = <b>${sA.toFixed(2)}</b>　｜　<span style="color:var(--curve2)">● 等比</span>：a₁₀ = <b>${ge[9].toFixed(2)}</b>，S₁₀ = <b>${sG.toFixed(2)}</b>`;
+};
+bindSlider("s-a1", v => { a1 = v; p1.redraw(); }, v => v.toFixed(1));
+bindSlider("s-d", v => { dd = v; p1.redraw(); }, v => v.toFixed(2));
+bindSlider("s-r", v => { rr = v; p1.redraw(); }, v => v.toFixed(2));
+
+// 實驗二
+const p2 = new Plot(document.getElementById("c2"), { xmin:0, xmax:31, ymin:-1, ymax:3, heightPx:360 });
+let r2 = 0.5;
+p2.redraw = () => {
+  const S = []; let s = 0;
+  for (let n = 0; n < 30; n++) { s += Math.pow(r2, n); S.push(s); }
+  const conv = Math.abs(r2) < 1;
+  const lim = 1/(1-r2);
+  let lo = Math.min(0, ...S), hi = Math.max(1, ...S);
+  if (conv) { lo = Math.min(lo, lim); hi = Math.max(hi, lim); }
+  const pad = (hi - lo) * 0.15 + 0.2;
+  p2.ymin = lo - pad; p2.ymax = hi + pad;
+  p2.clear(); p2.grid(5); p2.axes(5);
+  if (conv) p2.line(0, lim, 31, lim, cssVar("--curve3"), 2, [7,5]);
+  S.forEach((v, i) => p2.point(i+1, v, cssVar("--curve1"), 4));
+  document.getElementById("r2").innerHTML = conv
+    ? `|r| &lt; 1 → <b style="color:var(--ok)">收斂</b>，和 = 1/(1−r) = <b>${lim.toFixed(4)}</b>　S₃₀ = <b>${S[29].toFixed(4)}</b>`
+    : `|r| ≥ 1 → <b style="color:var(--err)">發散</b>，部分和不會趨近任何定值　S₃₀ = <b>${S[29].toFixed(2)}</b>`;
+};
+bindSlider("s-r2", v => { r2 = v; p2.redraw(); }, v => v.toFixed(2));
+
+renderQuiz("quiz", [
+  { q:"等差數列首項 $a_1 = 3$、公差 $d = 4$，則 $a_{10} = ?$",
+    opts:["$36$","$39$","$40$","$43$"], ans:1,
+    expl:"$a_{10} = a_1 + 9d = 3 + 36 = 39$。" },
+  { q:"$1 + 2 + 4 + 8 + \\cdots + 2^9 = ?$",
+    opts:["$511$","$512$","$1023$","$1024$"], ans:2,
+    expl:"等比級數 $S_{10} = \\dfrac{1\\cdot(1-2^{10})}{1-2} = 2^{10} - 1 = 1023$。" },
+  { q:"無窮級數 $1 + \\frac{1}{2} + \\frac{1}{4} + \\frac{1}{8} + \\cdots$ 的和是？",
+    opts:["無限大","$2$","$\\frac{3}{2}$","$1$"], ans:1,
+    expl:"公比 $r=\\frac12$，$|r|<1$ 收斂，和 $=\\dfrac{1}{1-\\frac12} = 2$ —— 實驗二的預設狀態。" },
+], "sequence");
+</script>
+</body>
+</html>

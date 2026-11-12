@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>條件機率與貝氏定理｜高中數學視覺實驗室</title>
+<meta name="theme-color" content="#0b101c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="../js/data.js"></script>
+<script src="../js/common.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, katexOpt)"></script>
+</head>
+<body>
+<main class="page">
+  <h1>🧪 條件機率與貝氏定理</h1>
+  <p class="subtitle">「檢驗準確率 95%，我驗出陽性，所以 95% 生病了？」—— 這是最常見的機率直覺陷阱。</p>
+
+  <div class="section">
+    <h2>實驗：陽性就真的生病嗎？</h2>
+    <p>上方的大方塊代表<b>全部的人</b>：左邊窄條是真的生病的人，右邊是健康的人；每一欄上半部（深色）是檢驗<b>陽性</b>的部分。下方長條把「所有陽性者」集合起來 —— 其中有多少比例是真的生病？</p>
+    <div class="lab">
+      <canvas id="c1"></canvas>
+      <div class="controls">
+        <div class="ctrl"><label for="s-p">盛行率 P(病) <b></b></label><input type="range" id="s-p" min="0.5" max="50" step="0.5" value="1"></div>
+        <div class="ctrl"><label for="s-se">敏感度 P(陽|病) <b></b></label><input type="range" id="s-se" min="50" max="100" step="1" value="95"></div>
+        <div class="ctrl"><label for="s-fp">偽陽性率 P(陽|健康) <b></b></label><input type="range" id="s-fp" min="0" max="30" step="0.5" value="5"></div>
+      </div>
+      <div class="readout" id="r1"></div>
+    </div>
+    <div class="note">預設情境：每 100 人只有 1 人生病，檢驗有 95% 敏感度、5% 偽陽性。結果驗出陽性的人當中，真正生病的只有約 <b>16%</b>！因為健康的人實在太多，就算只有 5% 被誤判，人數也遠超過真正的病人。把盛行率拉高，看結果怎麼變。</div>
+  </div>
+
+  <div class="section">
+    <h2>關鍵公式</h2>
+    <div class="formulas">
+      <div class="formula"><div class="name">條件機率</div><div class="math">$$P(A\mid B) = \frac{P(A\cap B)}{P(B)}$$</div></div>
+      <div class="formula"><div class="name">乘法公式</div><div class="math">$$P(A\cap B) = P(B)\,P(A\mid B)$$</div></div>
+      <div class="formula"><div class="name">貝氏定理</div><div class="math">$$P(A\mid B) = \frac{P(A)\,P(B\mid A)}{P(A)\,P(B\mid A) + P(A')\,P(B\mid A')}$$</div></div>
+      <div class="formula"><div class="name">獨立事件</div><div class="math">$$A, B \text{ 獨立} \iff P(A\cap B) = P(A)\,P(B)$$</div></div>
+    </div>
+  </div>
+
+  <div class="section"><h2>小測驗</h2><div id="quiz"></div></div>
+  <div class="unit-nav"></div>
+</main>
+<footer>高中數學視覺實驗室</footer>
+
+<script>
+injectNav(true);
+
+const p = new Plot(document.getElementById("c1"), { xmin:0, xmax:1, ymin:0, ymax:1, heightPx:440 });
+let prev = 0.01, se = 0.95, fp = 0.05;
+p.redraw = () => {
+  p.clear();
+  const c = p.ctx, W = p.W, H = p.H;
+  const pad = 14, top = 26;
+  const barH = 34, sqH = H - top - 44 - barH - 12, barY = top + sqH + 44;
+  const X0 = pad, X1 = W - pad, full = X1 - X0;
+  const wSick = Math.max(full * prev, 3);
+  const colS = cssVar("--curve4"), colH = cssVar("--curve1"), txt = cssVar("--text"), dim = cssVar("--text-dim");
+  c.font = "bold 12px 'Noto Sans TC', sans-serif"; c.textBaseline = "middle";
+  // 生病欄
+  c.globalAlpha = 0.25; c.fillStyle = colS; c.fillRect(X0, top, wSick, sqH);
+  c.globalAlpha = 0.95; c.fillRect(X0, top, wSick, sqH * se);
+  // 健康欄
+  c.globalAlpha = 0.18; c.fillStyle = colH; c.fillRect(X0 + wSick + 2, top, full - wSick - 2, sqH);
+  c.globalAlpha = 0.85; c.fillRect(X0 + wSick + 2, top, full - wSick - 2, sqH * fp);
+  c.globalAlpha = 1;
+  c.fillStyle = colS; c.textAlign = "left"; c.fillText("生病", X0, top - 12);
+  c.fillStyle = colH; c.textAlign = "right"; c.fillText("健康", X1, top - 12);
+  c.fillStyle = txt; c.textAlign = "center";
+  if (sqH * fp > 18) c.fillText("偽陽性（健康卻驗出陽性）", X0 + wSick + (full - wSick) / 2, top + sqH * fp / 2);
+  c.fillStyle = dim;
+  c.fillText("陰性", X0 + wSick + (full - wSick) / 2, top + sqH * (fp + (1 - fp) / 2));
+  // 所有陽性者長條
+  const tp = prev * se, fpos = (1 - prev) * fp, tot = tp + fpos;
+  const post = tot > 0 ? tp / tot : 0;
+  c.fillStyle = txt; c.textAlign = "left";
+  c.fillText("↓ 把所有「陽性」的人集合起來", X0, barY - 14);
+  c.fillStyle = colS; c.fillRect(X0, barY, full * post, barH);
+  c.fillStyle = colH; c.globalAlpha = 0.85; c.fillRect(X0 + full * post, barY, full * (1 - post), barH); c.globalAlpha = 1;
+  c.fillStyle = "#fff"; c.textAlign = "center";
+  if (full * post > 70) c.fillText(`真的生病 ${(post*100).toFixed(1)}%`, X0 + full * post / 2, barY + barH / 2);
+  if (full * (1 - post) > 80) c.fillText(`其實健康 ${((1-post)*100).toFixed(1)}%`, X0 + full * post + full * (1 - post) / 2, barY + barH / 2);
+  document.getElementById("r1").innerHTML =
+    `P(病|陽) = (${prev.toFixed(3)}×${se.toFixed(2)}) ÷ (${prev.toFixed(3)}×${se.toFixed(2)} + ${(1-prev).toFixed(3)}×${fp.toFixed(3)}) = <b style="font-size:1.15em">${(post*100).toFixed(1)}%</b>` +
+    `<br>每 10,000 人：真陽性 <b>${Math.round(tp*1e4)}</b> 人、偽陽性 <b>${Math.round(fpos*1e4)}</b> 人`;
+};
+bindSlider("s-p", v => { prev = v/100; p.redraw(); }, v => v.toFixed(1) + "%");
+bindSlider("s-se", v => { se = v/100; p.redraw(); }, v => v + "%");
+bindSlider("s-fp", v => { fp = v/100; p.redraw(); }, v => v.toFixed(1) + "%");
+
+renderQuiz("quiz", [
+  { q:"已知 $P(A)=0.5$、$P(B)=0.4$、$P(A\\cap B)=0.2$，則 $P(A\\mid B) = ?$",
+    opts:["$0.2$","$0.4$","$0.5$","$0.8$"], ans:2,
+    expl:"$P(A\\mid B) = \\dfrac{P(A\\cap B)}{P(B)} = \\dfrac{0.2}{0.4} = 0.5$。" },
+  { q:"承上題，事件 $A$ 與 $B$ 是否獨立？",
+    opts:["獨立","不獨立","互斥","無法判斷"], ans:0,
+    expl:"$P(A)P(B) = 0.5\\times0.4 = 0.2 = P(A\\cap B)$，所以獨立。也可以看成 $P(A\\mid B) = P(A)$：知道 B 發生並不改變 A 的機率。" },
+  { q:"某罕見疾病的檢驗「準確率很高」，但驗出陽性者中真正生病的比例卻很低，主要原因是？",
+    opts:["檢驗儀器故障","健康的人數遠多於病人，少量誤判就壓過真陽性","條件機率不適用於醫學","敏感度太高"], ans:1,
+    expl:"這就是「基本率」效應：盛行率很低時，偽陽性人數（多數健康人 × 小誤判率）會超過真陽性人數。實驗中把盛行率調低就看得到。" },
+], "bayes");
+</script>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>24 點挑戰｜高中數學視覺實驗室</title>
+<meta name="theme-color" content="#0b101c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="../js/data.js"></script>
+<script src="../js/common.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, katexOpt)"></script>
+</head>
+<body>
+<main class="page">
+  <h1>🃏 24 點挑戰</h1>
+  <p class="subtitle">用加減乘除把四個數字湊成 24。每個數字恰好用一次，可以產生分數。</p>
+
+  <div class="lab">
+    <div class="hud">
+      <div class="box"><small>得分</small><b id="h-score">0</b></div>
+      <div class="box"><small>連勝</small><b id="h-streak">0</b></div>
+      <div class="box"><small>最佳連勝</small><b id="h-best">0</b></div>
+      <div class="box"><small>本題用時</small><b id="h-time">0s</b></div>
+    </div>
+    <div class="btn-row" style="margin-top:0">
+      <span class="rules">難度：</span>
+      <button class="chip on" data-mode="0">普通（1–10）</button>
+      <button class="chip" data-mode="1">困難（1–13）</button>
+      <button class="chip" data-mode="2">魔王（必須用到分數）</button>
+    </div>
+    <div class="tiles24" id="tiles"></div>
+    <div class="ops" id="ops">
+      <button class="btn op" data-op="+">+</button>
+      <button class="btn op" data-op="-">−</button>
+      <button class="btn op" data-op="*">×</button>
+      <button class="btn op" data-op="/">÷</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn" id="b-undo">↩ 復原</button>
+      <button class="btn" id="b-reset">⟲ 重來</button>
+      <button class="btn" id="b-hint">💡 提示第一步（−5 分）</button>
+      <button class="btn" id="b-skip">⏭ 看解答並換題（連勝歸零）</button>
+    </div>
+    <div class="msg" id="msg">點一個數字 → 選運算 → 再點另一個數字</div>
+  </div>
+
+  <div class="section">
+    <h2>玩法</h2>
+    <ul class="rules">
+      <li>先點第一個數字，再點運算符號，最後點第二個數字，兩者會合併成運算結果。</li>
+      <li>重複三次，最後剩下的數字是 24 就過關。答對得分：普通 10、困難 20、魔王 40。</li>
+      <li>魔王題一定要經過<b>分數</b>才解得開，例如 1、5、5、5 → 5 × (5 − 1 ÷ 5) = 24。</li>
+      <li>所有題目都保證有解（由程式窮舉驗證）。</li>
+    </ul>
+  </div>
+</main>
+<footer>高中數學視覺實驗室</footer>
+
+<script>
+injectNav(true);
+
+/* ---- 有理數運算 ---- */
+const gcd = (a, b) => { a = Math.abs(a); b = Math.abs(b); while (b) [a, b] = [b, a % b]; return a || 1; };
+const R = (n, d = 1) => { if (d < 0) { n = -n; d = -d; } const g = gcd(n, d); return { n: n / g, d: d / g }; };
+const OPS = {
+  "+": (a, b) => R(a.n * b.d + b.n * a.d, a.d * b.d),
+  "-": (a, b) => R(a.n * b.d - b.n * a.d, a.d * b.d),
+  "*": (a, b) => R(a.n * b.n, a.d * b.d),
+  "/": (a, b) => b.n === 0 ? null : R(a.n * b.d, a.d * b.n),
+};
+const SYM = { "+": "+", "-": "−", "*": "×", "/": "÷" };
+const show = r => r.d === 1 ? String(r.n) : `${r.n}/${r.d}`;
+
+/* ---- 求解器：回傳 {expr, first:[a,op,b]} 或 null。intOnly=true 時中間值不可為分數 ---- */
+function solve(items, intOnly = false) {
+  if (items.length === 1) return (items[0].v.n === 24 && items[0].v.d === 1) ? items[0] : null;
+  for (let i = 0; i < items.length; i++) for (let j = 0; j < items.length; j++) {
+    if (i === j) continue;
+    const rest = items.filter((_, k) => k !== i && k !== j);
+    for (const op of ["+", "-", "*", "/"]) {
+      if ((op === "+" || op === "*") && i > j) continue;
+      const v = OPS[op](items[i].v, items[j].v);
+      if (!v || (intOnly && v.d !== 1)) continue;
+      const node = { v, e: `(${items[i].e} ${SYM[op]} ${items[j].e})`, first: items[i].first || items[j].first || [show(items[i].v), op, show(items[j].v)] };
+      const res = solve([...rest, node], intOnly);
+      if (res) return res;
+    }
+  }
+  return null;
+}
+const mk = nums => nums.map(x => ({ v: R(x), e: String(x) }));
+
+function newPuzzle(mode) {
+  const hi = mode === 0 ? 10 : 13;
+  for (let t = 0; t < 20000; t++) {
+    const nums = Array.from({ length: 4 }, () => 1 + Math.floor(Math.random() * hi));
+    const s = solve(mk(nums));
+    if (!s) continue;
+    if (mode === 2 && solve(mk(nums), true)) continue;   // 魔王：整數路徑解不開才收
+    return { nums, sol: s };
+  }
+  return { nums: [1, 5, 5, 5], sol: solve(mk([1, 5, 5, 5])) };
+}
+
+/* ---- 遊戲狀態 ---- */
+let mode = 0, puzzle, tiles, hist, selT = null, selOp = null, score = 0, streak = 0, t0 = 0, hinted = false;
+let best = +(localStorage.getItem("g24-best") || 0);
+const $ = id => document.getElementById(id);
+const say = (t, cls = "") => { const m = $("msg"); m.textContent = t; m.className = "msg " + cls; };
+
+function start() {
+  puzzle = newPuzzle(mode);
+  tiles = puzzle.nums.map(x => R(x)); hist = []; selT = selOp = null; t0 = Date.now(); hinted = false;
+  say("點一個數字 → 選運算 → 再點另一個數字");
+  render();
+}
+function render() {
+  const box = $("tiles"); box.innerHTML = "";
+  tiles.forEach((t, i) => {
+    const b = document.createElement("button");
+    b.className = "t24" + (t ? "" : " gone") + (selT === i ? " sel" : "");
+    b.textContent = t ? show(t) : "";
+    b.onclick = () => clickTile(i);
+    box.appendChild(b);
+  });
+  document.querySelectorAll(".op").forEach(o => o.classList.toggle("sel", o.dataset.op === selOp));
+  $("h-score").textContent = score; $("h-streak").textContent = streak; $("h-best").textContent = best;
+}
+function clickTile(i) {
+  if (!tiles[i]) return;
+  if (selT === null || selOp === null) { selT = selT === i ? null : i; render(); return; }
+  if (selT === i) { selT = null; render(); return; }
+  const v = OPS[selOp](tiles[selT], tiles[i]);
+  if (!v) { say("不能除以 0！", "bad"); return; }
+  hist.push(tiles.slice());
+  tiles[i] = v; tiles[selT] = null; selT = i; selOp = null;
+  const left = tiles.filter(Boolean);
+  if (left.length === 1) {
+    if (left[0].n === 24 && left[0].d === 1) {
+      const pts = [10, 20, 40][mode] - (hinted ? 5 : 0);
+      score += pts; streak++;
+      if (streak > best) { best = streak; localStorage.setItem("g24-best", best); }
+      say(`🎉 答對了！+${pts} 分（${Math.round((Date.now() - t0) / 1000)} 秒）下一題…`, "ok");
+      render(); setTimeout(start, 1300); return;
+    }
+    say(`結果是 ${show(left[0])}，不是 24。按「復原」或「重來」再試試`, "bad");
+  }
+  render();
+}
+document.querySelectorAll(".op").forEach(o => o.onclick = () => {
+  if (selT === null) { say("先點一個數字"); return; }
+  selOp = selOp === o.dataset.op ? null : o.dataset.op; render();
+});
+$("b-undo").onclick = () => { if (hist.length) { tiles = hist.pop(); selT = selOp = null; say("已復原一步"); render(); } };
+$("b-reset").onclick = () => { tiles = puzzle.nums.map(x => R(x)); hist = []; selT = selOp = null; say("重新開始這一題"); render(); };
+$("b-hint").onclick = () => {
+  const cur = tiles.filter(Boolean).map(v => ({ v, e: show(v) }));
+  const s = solve(cur);
+  if (!s) { say("目前這條路走不通了，按「復原」退回去", "bad"); return; }
+  if (!hinted) { hinted = true; }
+  const [x, op, y] = s.first;
+  say(`💡 試試先算 ${x} ${SYM[op]} ${y}`);
+};
+$("b-skip").onclick = () => {
+  streak = 0;
+  say(`解答：${puzzle.sol.e.replace(/^\((.*)\)$/, "$1")} = 24。換下一題…`);
+  render(); setTimeout(start, 3200);
+};
+document.querySelectorAll("[data-mode]").forEach(c => c.onclick = () => {
+  mode = +c.dataset.mode; streak = 0;
+  document.querySelectorAll("[data-mode]").forEach(x => x.classList.toggle("on", x === c));
+  start();
+});
+setInterval(() => { $("h-time").textContent = Math.round((Date.now() - t0) / 1000) + "s"; }, 500);
+start();
+</script>
+</body>
+</html>

@@ -242,9 +242,20 @@ class Plot {
     c.strokeStyle = color || cssVar("--curve1"); c.lineWidth = width; c.stroke();
   }
 
+  /** 填色多邊形 pts: [[x,y],...] */
+  polygon(pts, fill, alpha = 0.25, stroke = null, width = 2) {
+    const c = this.ctx;
+    c.beginPath();
+    pts.forEach(([x, y], i) => i ? c.lineTo(this.px(x), this.py(y)) : c.moveTo(this.px(x), this.py(y)));
+    c.closePath();
+    if (fill) { c.globalAlpha = alpha; c.fillStyle = fill; c.fill(); c.globalAlpha = 1; }
+    if (stroke) { c.strokeStyle = stroke; c.lineWidth = width; c.stroke(); }
+  }
+
   /** 可拖曳點。points: [{get:()=>[x,y], set:(x,y)=>{}}] */
   draggable(points, onChange) {
     let active = null;
+    this.canvas.style.touchAction = "none";   // 只有可拖曳的圖才攔截觸控，其餘可正常捲動頁面
     const pick = (ev) => {
       const rect = this.canvas.getBoundingClientRect();
       const mx = ev.clientX - rect.left, my = ev.clientY - rect.top;
@@ -335,17 +346,38 @@ const katexOpt = {
 };
 
 /* ===== 共用頁首（含首頁按鈕） ===== */
-function injectNav(isUnit) {
-  const root = isUnit ? "../" : "";
+function injectNav(isSub) {
+  const root = isSub ? "../" : "";
   const nav = document.createElement("nav");
   nav.className = "nav";
+  const links = [["單元","units"],["課程地圖","map"],["考試範圍","exam"],["遊戲","games"],["工具","tools"]];
   nav.innerHTML = `
     <a class="brand" href="${root}index.html"><span class="logo">∑</span><span class="brand-txt">高中數學視覺實驗室</span></a>
+    <div class="nav-links" id="navLinks">
+      ${links.map(([t, id]) => `<a href="${root}index.html#${id}">${t}</a>`).join("")}
+    </div>
     <div class="actions">
       <a class="btn-icon home-btn" href="${root}index.html" title="回首頁" aria-label="回首頁">🏠<span class="home-txt">首頁</span></a>
-      <button class="btn-icon" onclick="toggleTheme()" title="切換深淺色" aria-label="切換深淺色">◐</button>
+      <button class="btn-icon" onclick="toggleTheme()" title="切換深淺色" aria-label="切換深淺色">🌓</button>
+      <button class="btn-icon menu-btn" title="選單" aria-label="開啟選單" onclick="document.getElementById('navLinks').classList.toggle('open')">☰</button>
     </div>`;
   document.body.prepend(nav);
+  nav.querySelectorAll(".nav-links a").forEach(a => a.addEventListener("click", () =>
+    document.getElementById("navLinks").classList.remove("open")));
+  if (isSub) injectUnitNav();
+}
+
+/** 單元頁底部「上一單元／下一單元」：依 data.js 的 UNITS 順序自動產生 */
+function injectUnitNav() {
+  const box = document.querySelector(".unit-nav");
+  if (!box || typeof UNITS === "undefined") return;
+  const key = location.pathname.split("/").pop().replace(".html", "");
+  const i = UNITS.findIndex(u => u.key === key);
+  if (i < 0) return;
+  const prev = UNITS[i - 1], next = UNITS[i + 1];
+  box.innerHTML =
+    (prev ? `<a href="${prev.key}.html">← ${prev.title}</a>` : `<a href="../index.html">← 回首頁</a>`) +
+    (next ? `<a href="${next.key}.html">下一單元：${next.title} →</a>` : `<a href="../index.html#games">玩個遊戲放鬆一下 →</a>`);
 }
 
 document.addEventListener("DOMContentLoaded", () => {

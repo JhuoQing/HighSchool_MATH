@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>矩陣變形師｜高中數學視覺實驗室</title>
+<meta name="theme-color" content="#0b101c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="../js/data.js"></script>
+<script src="../js/common.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, katexOpt)"></script>
+</head>
+<body>
+<main class="page">
+  <h1>🧩 矩陣變形師</h1>
+  <p class="subtitle">用有限次數的線性變換，把藍色圖形變成橘色虛線的目標形狀。順序很重要！</p>
+
+  <div class="lab">
+    <div class="hud">
+      <div class="box"><small>關卡</small><b id="h-level">1</b></div>
+      <div class="box"><small>剩餘步數</small><b id="h-moves">0</b></div>
+      <div class="box"><small>得分</small><b id="h-score">0</b></div>
+      <div class="box"><small>最高關卡</small><b id="h-best">1</b></div>
+    </div>
+    <canvas id="c1"></canvas>
+    <div class="readout" id="mats" style="text-align:center"></div>
+    <div class="btn-row" id="ops"></div>
+    <div class="btn-row">
+      <button class="btn" id="b-undo">↩ 復原一步</button>
+      <button class="btn" id="b-reset">⟲ 重來</button>
+      <button class="btn" id="b-skip">⏭ 看解法並換題（−10 分）</button>
+    </div>
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <div class="section">
+    <h2>玩法</h2>
+    <ul class="rules">
+      <li>每按一個變換，就把「目前的圖形」再做一次該變換（矩陣從<b>左邊</b>乘上去）。</li>
+      <li>步數上限就是最少步數 —— 沒有浪費的空間。矩陣乘法<b>不可交換</b>：先旋轉再鏡射 ≠ 先鏡射再旋轉。</li>
+      <li>觀察目標的矩陣：行列式的正負告訴你圖形有沒有翻面（需要奇數次鏡射），大小告訴你有沒有伸縮。</li>
+      <li>第 3 關起加入「推移」，第 6 關起加入「伸縮」，步數也會越來越多。</li>
+    </ul>
+  </div>
+</main>
+<footer>高中數學視覺實驗室</footer>
+
+<script>
+injectNav(true);
+
+const OPS = [
+  { id:"R",  name:"⟲ 旋轉 90°",   m:[0,-1,1,0] },
+  { id:"Mx", name:"⇅ 對 x 軸鏡射", m:[1,0,0,-1] },
+  { id:"My", name:"⇄ 對 y 軸鏡射", m:[-1,0,0,1] },
+  { id:"D",  name:"⤢ 對 y=x 鏡射", m:[0,1,1,0] },
+  { id:"Sh", name:"▱ 推移",        m:[1,1,0,1],  from:3 },
+  { id:"S2", name:"↔ x 方向 ×2",   m:[2,0,0,1],  from:6 },
+];
+const mul = (A, B) => [A[0]*B[0]+A[1]*B[2], A[0]*B[1]+A[1]*B[3], A[2]*B[0]+A[3]*B[2], A[2]*B[1]+A[3]*B[3]];
+const I = [1,0,0,1], eq = (A, B) => A.every((v, i) => v === B[i]);
+const big = M => M.some(v => Math.abs(v) > 3);
+const SHAPE = [[0,0],[0,2],[1.4,2],[1.4,1.5],[0.5,1.5],[0.5,1.1],[1.1,1.1],[1.1,0.7],[0.5,0.7],[0.5,0]];
+
+const p = new Plot(document.getElementById("c1"), { xmin:-9, xmax:9, ymin:-7.5, ymax:7.5, heightPx:460, aspect:true });
+const $ = id => document.getElementById(id);
+let level = 1, score = 0, cur, target, movesLeft, limit, hist, avail, solution;
+let best = +(localStorage.getItem("mpz-best") || 1);
+const say = (t, cls = "") => { $("msg").innerHTML = t; $("msg").className = "msg " + cls; };
+
+/** BFS：從單位矩陣出發，回傳到 target 的最短操作序列（最多 maxD 步），找不到回傳 null */
+function shortest(tg, ops, maxD) {
+  let frontier = [{ M: I, seq: [] }];
+  const seen = new Set([I.join()]);
+  if (eq(I, tg)) return [];
+  for (let d = 1; d <= maxD; d++) {
+    const next = [];
+    for (const { M, seq } of frontier) for (const op of ops) {
+      const N = mul(op.m, M);
+      if (big(N) || seen.has(N.join())) continue;
+      const s2 = [...seq, op];
+      if (eq(N, tg)) return s2;
+      seen.add(N.join()); next.push({ M: N, seq: s2 });
+    }
+    frontier = next;
+  }
+  return null;
+}
+function gen() {
+  avail = OPS.filter(o => !o.from || level >= o.from);
+  const k = Math.min(2 + Math.floor((level - 1) / 2), 6);
+  for (let t = 0; t < 2000; t++) {
+    let M = I, ok = true;
+    for (let i = 0; i < k; i++) { M = mul(avail[Math.floor(Math.random() * avail.length)].m, M); if (big(M)) { ok = false; break; } }
+    if (!ok || eq(M, I)) continue;
+    const s = shortest(M, avail, k);
+    if (s && s.length === k) return { M, s };      // 確保真的需要 k 步
+  }
+  const M = mul(OPS[1].m, OPS[0].m);
+  return { M, s: [OPS[0], OPS[1]] };
+}
+function newLevel() {
+  const g = gen();
+  target = g.M; solution = g.s; limit = g.s.length;
+  cur = I; hist = []; movesLeft = limit;
+  const box = $("ops"); box.innerHTML = "";
+  avail.forEach(op => {
+    const b = document.createElement("button");
+    b.className = "btn"; b.innerHTML = `${op.name} <small style="color:var(--text-dim)">[${op.m[0]} ${op.m[1]}; ${op.m[2]} ${op.m[3]}]</small>`;
+    b.onclick = () => apply(op);
+    box.appendChild(b);
+  });
+  say(`第 ${level} 關：請在 <b>${limit}</b> 步內完成變形`);
+  hud(); p.redraw();
+}
+function hud() {
+  $("h-level").textContent = level; $("h-moves").textContent = movesLeft;
+  $("h-score").textContent = score; $("h-best").textContent = best;
+  const mb = M => `<span class="matbox"><span>${M[0]}</span><span>${M[1]}</span><span>${M[2]}</span><span>${M[3]}</span></span>`;
+  const det = M => M[0]*M[3] - M[1]*M[2];
+  $("mats").innerHTML = `<span style="color:var(--curve1)">目前</span> ${mb(cur)} det=${det(cur)}　→　<span style="color:var(--curve2)">目標</span> ${mb(target)} det=${det(target)}`;
+}
+function apply(op) {
+  if (eq(cur, target)) return;
+  if (movesLeft <= 0) { say("步數用完了！按「復原」或「重來」", "bad"); return; }
+  const N = mul(op.m, cur);
+  if (big(N)) { say("圖形會變得太大，這一步不允許", "bad"); return; }
+  hist.push(cur); cur = N; movesLeft--;
+  hud(); p.redraw();
+  if (eq(cur, target)) {
+    const pts = 30 * limit; score += pts; level++;
+    if (level > best) { best = level; localStorage.setItem("mpz-best", best); }
+    say(`🎉 完美變形！+${pts} 分。前往第 ${level} 關…`, "ok"); hud();
+    setTimeout(newLevel, 1500);
+  } else if (movesLeft === 0) say("步數用完但形狀還不對 —— 想想順序，按「復原」再試", "bad");
+  else say(`還剩 ${movesLeft} 步`);
+}
+$("b-undo").onclick = () => { if (hist.length && !eq(cur, target)) { cur = hist.pop(); movesLeft++; hud(); p.redraw(); say("已復原一步"); } };
+$("b-reset").onclick = () => { cur = I; hist = []; movesLeft = limit; hud(); p.redraw(); say("重新開始這一關"); };
+$("b-skip").onclick = () => {
+  score = Math.max(0, score - 10);
+  say("一種解法：" + solution.map(o => o.name).join(" → ") + "　4 秒後換題…");
+  hud(); setTimeout(newLevel, 4000);
+};
+
+p.redraw = () => {
+  const T = M => ([x, y]) => [M[0]*x + M[1]*y, M[2]*x + M[3]*y];
+  // 視野自動貼合「目前 + 目標」兩個圖形，圖形永遠夠大
+  const all = SHAPE.map(T(target)).concat(SHAPE.map(T(cur)));
+  const half = Math.max(3.2, ...all.map(q => Math.max(Math.abs(q[0]), Math.abs(q[1])))) + 0.8;
+  p._base = { xmin: -half, xmax: half, ymin: -half, ymax: half };
+  p._fitAspect();
+  p.clear(); p.grid(1); p.axes(1);
+  const c = p.ctx;
+  c.setLineDash([7, 5]);
+  p.polygon(SHAPE.map(T(target)), cssVar("--curve2"), 0.12, cssVar("--curve2"), 2.5);
+  c.setLineDash([]);
+  p.polygon(SHAPE.map(T(cur)), cssVar("--curve1"), 0.4, cssVar("--curve1"), 2.5);
+};
+newLevel();
+</script>
+</body>
+</html>

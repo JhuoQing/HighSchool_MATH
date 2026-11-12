@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>函數繪圖計算機｜高中數學視覺實驗室</title>
+<meta name="theme-color" content="#0b101c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="../js/data.js"></script>
+<script src="../js/common.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, katexOpt)"></script>
+</head>
+<body>
+<main class="page">
+  <h1>🖊️ 函數繪圖計算機</h1>
+  <p class="subtitle">輸入函數就畫圖。<b>拖曳</b>可平移、<b>滾輪／雙指</b>可縮放。</p>
+
+  <div class="lab">
+    <canvas id="c1"></canvas>
+    <div id="rows" style="margin-top:1rem"></div>
+    <div class="btn-row">
+      <button class="btn" id="b-add">＋ 新增函數</button>
+      <button class="btn" id="b-in">🔍＋ 放大</button>
+      <button class="btn" id="b-out">🔍− 縮小</button>
+      <button class="btn" id="b-home">⌂ 回到原點</button>
+    </div>
+    <div class="readout" id="r1"></div>
+  </div>
+
+  <div class="section">
+    <h2>語法說明</h2>
+    <div class="formulas">
+      <div class="formula"><div class="name">基本運算</div><div class="math"><code>+ − * / ^</code>、括號；可省略乘號：<code>2x</code>、<code>3sin(x)</code>、<code>(x+1)(x-1)</code></div></div>
+      <div class="formula"><div class="name">函數</div><div class="math"><code>sin cos tan asin acos atan sqrt abs ln log log2 exp floor</code></div></div>
+      <div class="formula"><div class="name">常數</div><div class="math"><code>pi</code>（或 π）、<code>e</code></div></div>
+      <div class="formula"><div class="name">範例</div><div class="math"><code>x^3 - 3x</code>、<code>2^x</code>、<code>abs(sin(x))</code>、<code>sqrt(9 - x^2)</code>、<code>1/x</code></div></div>
+    </div>
+  </div>
+</main>
+<footer>高中數學視覺實驗室</footer>
+
+<script>
+injectNav(true);
+
+/* ---- 安全的數學運算式解析器（遞迴下降，不使用 eval） ---- */
+const FUNCS = { sin: Math.sin, cos: Math.cos, tan: Math.tan, asin: Math.asin, acos: Math.acos, atan: Math.atan,
+  sqrt: Math.sqrt, abs: Math.abs, ln: Math.log, log: Math.log10, log2: Math.log2, exp: Math.exp, floor: Math.floor };
+function compile(src) {
+  const s = src.replace(/\s+/g, "").replace(/π/g, "pi").replace(/−/g, "-").replace(/×/g, "*").replace(/÷/g, "/").toLowerCase();
+  if (!s) throw new Error("空白");
+  // 斷詞
+  const toks = []; let i = 0;
+  while (i < s.length) {
+    const ch = s[i];
+    if (/[0-9.]/.test(ch)) { let j = i; while (j < s.length && /[0-9.]/.test(s[j])) j++; toks.push({ t: "num", v: parseFloat(s.slice(i, j)) }); i = j; }
+    else if (/[a-z]/.test(ch)) {
+      let j = i; while (j < s.length && /[a-z0-9]/.test(s[j])) j++;
+      let word = s.slice(i, j);
+      // 盡量比對最長的已知名稱，其餘拆成 x / e / pi
+      const names = [...Object.keys(FUNCS), "pi", "x", "e"].sort((a, b) => b.length - a.length);
+      let k = 0;
+      while (k < word.length) {
+        const nm = names.find(n => word.startsWith(n, k));
+        if (!nm) throw new Error("看不懂「" + word.slice(k) + "」");
+        toks.push(FUNCS[nm] ? { t: "fn", v: nm } : { t: "id", v: nm }); k += nm.length;
+      }
+      i = j;
+    }
+    else if ("+-*/^()".includes(ch)) { toks.push({ t: ch }); i++; }
+    else throw new Error("不支援的符號「" + ch + "」");
+  }
+  let pos = 0;
+  const peek = () => toks[pos], eat = t => { if (!peek() || peek().t !== t) throw new Error("缺少 " + t); pos++; };
+  const startsValue = tk => tk && (tk.t === "num" || tk.t === "id" || tk.t === "fn" || tk.t === "(");
+  function expr() { let a = term(); while (peek() && (peek().t === "+" || peek().t === "-")) { const op = toks[pos++].t, b = term(), a0 = a; a = op === "+" ? x => a0(x) + b(x) : x => a0(x) - b(x); } return a; }
+  function term() {
+    let a = unary();
+    while (peek() && (peek().t === "*" || peek().t === "/" || startsValue(peek()))) {
+      let op = "*"; if (peek().t === "*" || peek().t === "/") op = toks[pos++].t;
+      const b = unary(), a0 = a; a = op === "*" ? x => a0(x) * b(x) : x => a0(x) / b(x);
+    }
+    return a;
+  }
+  function unary() { if (peek() && peek().t === "-") { pos++; const a = unary(); return x => -a(x); } if (peek() && peek().t === "+") { pos++; return unary(); } return power(); }
+  function power() { const a = atom(); if (peek() && peek().t === "^") { pos++; const b = unary(); return x => Math.pow(a(x), b(x)); } return a; }
+  function atom() {
+    const tk = peek(); if (!tk) throw new Error("運算式不完整");
+    if (tk.t === "num") { pos++; return () => tk.v; }
+    if (tk.t === "id") { pos++; return tk.v === "x" ? x => x : tk.v === "pi" ? () => Math.PI : () => Math.E; }
+    if (tk.t === "fn") { pos++; eat("("); const a = expr(); eat(")"); const f = FUNCS[tk.v]; return x => f(a(x)); }
+    if (tk.t === "(") { pos++; const a = expr(); eat(")"); return a; }
+    throw new Error("位置錯誤的「" + tk.t + "」");
+  }
+  const f = expr();
+  if (pos < toks.length) throw new Error("多餘的「" + (toks[pos].v ?? toks[pos].t) + "」");
+  return f;
+}
+
+/* ---- 繪圖與互動 ---- */
+const p = new Plot(document.getElementById("c1"), { xmin:-8, xmax:8, ymin:-5, ymax:5, heightPx:480, aspect:true });
+const COL = ["--curve1", "--curve2", "--curve3", "--curve4", "--accent2"];
+let fns = [];   // {src, f, err}
+let view = { cx: 0, cy: 0, half: 8 };
+function applyView() {
+  p._base = { xmin: view.cx - view.half, xmax: view.cx + view.half, ymin: view.cy - view.half * 0.6, ymax: view.cy + view.half * 0.6 };
+  p._fitAspect();
+}
+p.redraw = () => {
+  applyView();
+  p.clear(); p.grid(); p.axes();
+  fns.forEach((fn, i) => { if (fn.f) p.fn(fn.f, cssVar(COL[i % COL.length]), 2.8); });
+  document.getElementById("r1").innerHTML =
+    `顯示範圍：x ∈ [<b>${p.xmin.toFixed(2)}</b>, <b>${p.xmax.toFixed(2)}</b>]　y ∈ [<b>${p.ymin.toFixed(2)}</b>, <b>${p.ymax.toFixed(2)}</b>]`;
+};
+function rows() {
+  const box = document.getElementById("rows"); box.innerHTML = "";
+  fns.forEach((fn, i) => {
+    const d = document.createElement("div"); d.className = "fexpr";
+    d.innerHTML = `<span class="dot" style="background:var(${COL[i % COL.length]})"></span><span style="font-family:'JetBrains Mono',monospace">y =</span>
+      <input type="text" value="${fn.src.replace(/"/g, "")}" placeholder="例如 x^2 - 2x" spellcheck="false" autocapitalize="off">
+      <button class="btn-icon" title="刪除" aria-label="刪除">✕</button>`;
+    const inp = d.querySelector("input");
+    inp.oninput = () => {
+      fn.src = inp.value;
+      try { fn.f = compile(fn.src); inp.classList.remove("bad"); inp.title = ""; }
+      catch (e) { fn.f = null; inp.classList.add("bad"); inp.title = e.message; }
+      p.redraw();
+    };
+    d.querySelector("button").onclick = () => { fns.splice(i, 1); rows(); p.redraw(); };
+    box.appendChild(d);
+  });
+}
+function add(src) { let f = null; try { f = compile(src); } catch {} fns.push({ src, f }); rows(); p.redraw(); }
+document.getElementById("b-add").onclick = () => { if (fns.length < 5) add(""); };
+const zoom = k => { view.half = Math.max(0.05, Math.min(1e5, view.half * k)); p.redraw(); };
+document.getElementById("b-in").onclick = () => zoom(0.7);
+document.getElementById("b-out").onclick = () => zoom(1.4);
+document.getElementById("b-home").onclick = () => { view = { cx: 0, cy: 0, half: 8 }; p.redraw(); };
+
+// 拖曳平移、滾輪與雙指縮放
+const cv = p.canvas; cv.style.touchAction = "none"; cv.style.cursor = "grab";
+const ptrs = new Map(); let lastD = 0;
+cv.addEventListener("pointerdown", e => { ptrs.set(e.pointerId, [e.clientX, e.clientY]); cv.setPointerCapture(e.pointerId); });
+cv.addEventListener("pointermove", e => {
+  if (!ptrs.has(e.pointerId)) return;
+  const prev = ptrs.get(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+  if (ptrs.size === 1) {
+    const upp = (p.xmax - p.xmin) / p.W;   // 每像素單位數
+    view.cx -= (e.clientX - prev[0]) * upp; view.cy += (e.clientY - prev[1]) * upp;
+  } else if (ptrs.size === 2) {
+    const [a, b] = [...ptrs.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+    if (lastD) view.half = Math.max(0.05, Math.min(1e5, view.half * lastD / d));
+    lastD = d;
+  }
+  p.redraw();
+});
+const up = e => { ptrs.delete(e.pointerId); lastD = 0; };
+cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
+cv.addEventListener("wheel", e => { e.preventDefault(); zoom(e.deltaY < 0 ? 0.88 : 1.14); }, { passive: false });
+
+add("x^2 - 3"); add("2sin(x)");
+</script>
+</body>
+</html>

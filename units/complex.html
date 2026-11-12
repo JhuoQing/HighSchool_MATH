@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>複數平面｜高中數學視覺實驗室</title>
+<meta name="theme-color" content="#0b101c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="../js/data.js"></script>
+<script src="../js/common.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, katexOpt)"></script>
+</head>
+<body>
+<main class="page">
+  <h1>🌀 複數平面</h1>
+  <p class="subtitle">把複數畫成平面上的點，乘法就變成「旋轉 + 伸縮」。</p>
+
+  <div class="section">
+    <h2>實驗一：複數乘法的幾何意義</h2>
+    <p><b>拖曳 $z$（藍）與 $w$（橘）</b>，觀察乘積 $zw$（紅）：它的<b>長度</b>是兩者長度<b>相乘</b>，<b>角度</b>是兩者角度<b>相加</b>。虛線是單位圓。</p>
+    <div class="lab">
+      <canvas id="c1"></canvas>
+      <div class="readout" id="r1"></div>
+    </div>
+    <div class="note">把 $w$ 拖到 $i$ 的位置 $(0, 1)$：$|i| = 1$、角度 $90°$，所以乘以 $i$ 就是<b>逆時針轉 90°</b>而長度不變。這也解釋了為什麼 $i^2 = -1$：轉兩次 90° 就是轉 180°！</div>
+  </div>
+
+  <div class="section">
+    <h2>實驗二：1 的 n 次方根</h2>
+    <p>方程式 $z^n = 1$ 有 $n$ 個複數解，它們把單位圓<b>等分成 $n$ 份</b>，連起來是正 $n$ 邊形：</p>
+    <div class="lab">
+      <canvas id="c2"></canvas>
+      <div class="controls">
+        <div class="ctrl" style="flex:2"><label for="s-n">n <b></b></label><input type="range" id="s-n" min="2" max="12" step="1" value="5"></div>
+      </div>
+      <div class="readout" id="r2"></div>
+    </div>
+    <div class="note">由棣美弗定理，每個根的角度是 $\dfrac{360°\cdot k}{n}$。每個根自乘 $n$ 次，角度剛好繞回 $360°$ 的整數倍，也就是回到 $1$。</div>
+  </div>
+
+  <div class="section">
+    <h2>關鍵公式</h2>
+    <div class="formulas">
+      <div class="formula"><div class="name">絕對值與極式</div><div class="math">$$|a+bi| = \sqrt{a^2+b^2},\qquad z = r(\cos\theta + i\sin\theta)$$</div></div>
+      <div class="formula"><div class="name">極式乘法</div><div class="math">$$z_1 z_2 = r_1 r_2\big(\cos(\theta_1+\theta_2) + i\sin(\theta_1+\theta_2)\big)$$</div></div>
+      <div class="formula"><div class="name">棣美弗定理</div><div class="math">$$(\cos\theta + i\sin\theta)^n = \cos n\theta + i\sin n\theta$$</div></div>
+      <div class="formula"><div class="name">1 的 n 次方根</div><div class="math">$$z_k = \cos\frac{2k\pi}{n} + i\sin\frac{2k\pi}{n},\quad k = 0, 1, \ldots, n-1$$</div></div>
+    </div>
+  </div>
+
+  <div class="section"><h2>小測驗</h2><div id="quiz"></div></div>
+  <div class="unit-nav"></div>
+</main>
+<footer>高中數學視覺實驗室</footer>
+
+<script>
+injectNav(true);
+const deg = (x, y) => { let a = Math.atan2(y, x) * 180 / Math.PI; return a < 0 ? a + 360 : a; };
+const cx = (a, b) => `${a.toFixed(2)} ${b >= 0 ? "+" : "−"} ${Math.abs(b).toFixed(2)}i`;
+
+// 實驗一：乘法
+const p1 = new Plot(document.getElementById("c1"), { xmin:-4, xmax:4, ymin:-3.2, ymax:3.6, heightPx:460, aspect:true });
+let Z = [1.5, 0.8], Wc = [0.6, 1.2];
+p1.redraw = () => {
+  p1.clear(); p1.grid(1); p1.axes(1);
+  const c = p1.ctx;
+  c.setLineDash([5,5]); p1.circle(0, 0, 1, cssVar("--text-dim"), 1.2); c.setLineDash([]);
+  const Pz = [Z[0]*Wc[0] - Z[1]*Wc[1], Z[0]*Wc[1] + Z[1]*Wc[0]];
+  p1.arrow(0, 0, Pz[0], Pz[1], cssVar("--curve4"), 3, "zw");
+  p1.arrow(0, 0, Z[0], Z[1], cssVar("--curve1"), 3, "z");
+  p1.arrow(0, 0, Wc[0], Wc[1], cssVar("--curve2"), 3, "w");
+  p1.point(Z[0], Z[1], cssVar("--curve1"), 7);
+  p1.point(Wc[0], Wc[1], cssVar("--curve2"), 7);
+  p1.text(p1.xmax - 0.5, 0.3, "Re", cssVar("--axis"));
+  p1.text(0.15, p1.ymax - 0.3, "Im", cssVar("--axis"));
+  const rz = Math.hypot(...Z), rw = Math.hypot(...Wc), rp = Math.hypot(...Pz);
+  document.getElementById("r1").innerHTML =
+    `<span style="color:var(--curve1)">z = ${cx(...Z)}</span>：長度 <b>${rz.toFixed(2)}</b>、角度 <b>${deg(...Z).toFixed(1)}°</b><br>` +
+    `<span style="color:var(--curve2)">w = ${cx(...Wc)}</span>：長度 <b>${rw.toFixed(2)}</b>、角度 <b>${deg(...Wc).toFixed(1)}°</b><br>` +
+    `<span style="color:var(--curve4)">zw = ${cx(...Pz)}</span>：長度 <b>${rp.toFixed(2)}</b>（= ${rz.toFixed(2)} × ${rw.toFixed(2)}）、角度 <b>${deg(...Pz).toFixed(1)}°</b>（= 兩角度相加${deg(...Z) + deg(...Wc) >= 360 ? "，超過 360° 再繞回來" : ""}）`;
+};
+p1.draggable([
+  { get: () => Z, set: (x, y) => { Z = [x, y]; } },
+  { get: () => Wc, set: (x, y) => { Wc = [x, y]; } },
+], () => p1.redraw());
+p1.redraw();
+
+// 實驗二：n 次方根
+const p2 = new Plot(document.getElementById("c2"), { xmin:-1.7, xmax:1.7, ymin:-1.4, ymax:1.4, heightPx:420, aspect:true });
+let nn = 5;
+p2.redraw = () => {
+  p2.clear(); p2.grid(0.5); p2.axes(1);
+  p2.circle(0, 0, 1, cssVar("--text-dim"), 1.5);
+  const pts = [];
+  for (let k = 0; k < nn; k++) pts.push([Math.cos(2*Math.PI*k/nn), Math.sin(2*Math.PI*k/nn)]);
+  p2.polygon(pts, cssVar("--curve1"), 0.18, cssVar("--curve1"), 2);
+  pts.forEach(([x, y], k) => {
+    p2.line(0, 0, x, y, cssVar("--text-dim"), 1, [3,4]);
+    p2.point(x, y, k === 0 ? cssVar("--curve4") : cssVar("--curve2"), 6, nn <= 8 ? `z${k}` : "");
+  });
+  document.getElementById("r2").innerHTML =
+    `zⁿ = 1 共有 <b>${nn}</b> 個根，相鄰兩根夾角 = 360° ÷ ${nn} = <b>${(360/nn).toFixed(1)}°</b>　（紅點是 z₀ = 1）`;
+};
+bindSlider("s-n", v => { nn = v; p2.redraw(); });
+
+renderQuiz("quiz", [
+  { q:"$|3 + 4i| = ?$",
+    opts:["$7$","$5$","$\\sqrt{7}$","$25$"], ans:1,
+    expl:"$\\sqrt{3^2 + 4^2} = 5$ —— 就是複數平面上點 $(3,4)$ 到原點的距離。" },
+  { q:"把任意複數乘以 $i$，在複數平面上的效果是？",
+    opts:["長度變 2 倍","對實軸鏡射","逆時針旋轉 90°","順時針旋轉 90°"], ans:2,
+    expl:"$i$ 的長度為 1、角度 90°；相乘時長度相乘（不變）、角度相加（+90°）。" },
+  { q:"$(\\cos 30° + i\\sin 30°)^6 = ?$",
+    opts:["$1$","$-1$","$i$","$-i$"], ans:1,
+    expl:"棣美弗定理：角度變 $6\\times30° = 180°$，$\\cos180° + i\\sin180° = -1$。" },
+], "complex");
+</script>
+</body>
+</html>

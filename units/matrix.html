@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>矩陣與線性變換｜高中數學視覺實驗室</title>
+<meta name="theme-color" content="#0b101c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="../js/data.js"></script>
+<script src="../js/common.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, katexOpt)"></script>
+</head>
+<body>
+<main class="page">
+  <h1>🔳 矩陣與線性變換</h1>
+  <p class="subtitle">矩陣不只是一堆數字的表格 —— 它是一台「把整個平面搬動」的機器。</p>
+
+  <div class="section">
+    <h2>實驗：2×2 矩陣如何變換平面</h2>
+    <p>矩陣 $\begin{bmatrix}a&b\\c&d\end{bmatrix}$ 的<b>第一行</b> $(a,c)$ 是 $(1,0)$ 被送去的位置（藍箭頭），<b>第二行</b> $(b,d)$ 是 $(0,1)$ 被送去的位置（橘箭頭）。知道這兩個箭頭，整個平面的命運就決定了。灰色虛線是原本的 F，藍色是變換後的 F：</p>
+    <div class="lab">
+      <div class="btn-row" style="margin:0 0 1rem">
+        <button class="btn" data-m="1,0,0,1">單位矩陣</button>
+        <button class="btn" data-m="0,-1,1,0">旋轉 90°</button>
+        <button class="btn" data-m="0.87,-0.5,0.5,0.87">旋轉 30°</button>
+        <button class="btn" data-m="1,0,0,-1">對 x 軸鏡射</button>
+        <button class="btn" data-m="0,1,1,0">對 y=x 鏡射</button>
+        <button class="btn" data-m="2,0,0,2">伸縮 2 倍</button>
+        <button class="btn" data-m="1,1,0,1">推移</button>
+        <button class="btn" data-m="1,2,0.5,1">壓扁 (det=0)</button>
+      </div>
+      <canvas id="c1"></canvas>
+      <div class="controls">
+        <div class="ctrl"><label for="s-a">a <b></b></label><input type="range" id="s-a" min="-2" max="2" step="0.01" value="1"></div>
+        <div class="ctrl"><label for="s-b">b <b></b></label><input type="range" id="s-b" min="-2" max="2" step="0.01" value="0"></div>
+      </div>
+      <div class="controls">
+        <div class="ctrl"><label for="s-c">c <b></b></label><input type="range" id="s-c" min="-2" max="2" step="0.01" value="0"></div>
+        <div class="ctrl"><label for="s-d">d <b></b></label><input type="range" id="s-d" min="-2" max="2" step="0.01" value="1"></div>
+      </div>
+      <div class="readout" id="r1"></div>
+    </div>
+    <div class="note">綠色區域是單位正方形變換後的樣子，它的面積就是 $|\det|$。$\det &lt; 0$ 時圖形會「翻面」（F 變成鏡像）；$\det = 0$ 時整個平面被壓成一條線 —— 資訊遺失，所以<b>沒有反方陣</b>。</div>
+  </div>
+
+  <div class="section">
+    <h2>關鍵公式</h2>
+    <div class="formulas">
+      <div class="formula"><div class="name">矩陣乘向量</div><div class="math">$$\begin{bmatrix}a&b\\c&d\end{bmatrix}\begin{bmatrix}x\\y\end{bmatrix} = \begin{bmatrix}ax+by\\cx+dy\end{bmatrix}$$</div></div>
+      <div class="formula"><div class="name">行列式</div><div class="math">$$\det\begin{bmatrix}a&b\\c&d\end{bmatrix} = ad - bc$$</div></div>
+      <div class="formula"><div class="name">反方陣（det ≠ 0）</div><div class="math">$$A^{-1} = \frac{1}{ad-bc}\begin{bmatrix}d&-b\\-c&a\end{bmatrix}$$</div></div>
+      <div class="formula"><div class="name">旋轉矩陣（逆時針 θ）</div><div class="math">$$\begin{bmatrix}\cos\theta&-\sin\theta\\ \sin\theta&\cos\theta\end{bmatrix}$$</div></div>
+    </div>
+  </div>
+
+  <div class="section"><h2>小測驗</h2><div id="quiz"></div></div>
+  <div class="unit-nav"></div>
+</main>
+<footer>高中數學視覺實驗室</footer>
+
+<script>
+injectNav(true);
+
+const p = new Plot(document.getElementById("c1"), { xmin:-5, xmax:5, ymin:-4, ymax:4, heightPx:460, aspect:true });
+let M = [1, 0, 0, 1]; // a b c d
+const F = [[0,0],[0,2.5],[1.5,2.5],[1.5,2],[0.5,2],[0.5,1.5],[1.2,1.5],[1.2,1],[0.5,1],[0.5,0]];
+const T = ([x, y]) => [M[0]*x + M[1]*y, M[2]*x + M[3]*y];
+p.redraw = () => {
+  p.clear(); p.grid(1); p.axes(1);
+  // 變換後的格線（讓「整個平面被搬動」看得見）
+  const gcol = cssVar("--accent");
+  p.ctx.globalAlpha = 0.18;
+  for (let i = -6; i <= 6; i++) {
+    const a = T([i, -6]), b = T([i, 6]), c = T([-6, i]), d = T([6, i]);
+    p.line(a[0], a[1], b[0], b[1], gcol, 1);
+    p.line(c[0], c[1], d[0], d[1], gcol, 1);
+  }
+  p.ctx.globalAlpha = 1;
+  p.polygon(F, null, 0, cssVar("--text-dim"), 1.5);
+  p.polygon([[0,0],[1,0],[1,1],[0,1]].map(T), cssVar("--curve3"), 0.3, cssVar("--curve3"), 1.5);
+  p.polygon(F.map(T), cssVar("--curve1"), 0.3, cssVar("--curve1"), 2.5);
+  p.arrow(0, 0, M[0], M[2], cssVar("--curve1"), 3.5, "(a,c)");
+  p.arrow(0, 0, M[1], M[3], cssVar("--curve2"), 3.5, "(b,d)");
+  const det = M[0]*M[3] - M[1]*M[2];
+  let note = Math.abs(det) < 0.02 ? `<b style="color:var(--err)">det ≈ 0：平面被壓扁，不可逆</b>`
+           : det < 0 ? `<b style="color:var(--warn)">det &lt; 0：圖形翻面（鏡像）</b>`
+           : `面積變為原來的 <b>${det.toFixed(2)}</b> 倍`;
+  document.getElementById("r1").innerHTML =
+    `矩陣 = [ <b>${M[0].toFixed(2)}</b>  <b>${M[1].toFixed(2)}</b> ; <b>${M[2].toFixed(2)}</b>  <b>${M[3].toFixed(2)}</b> ]　det = ad − bc = <b>${det.toFixed(2)}</b>　${note}`;
+};
+const ids = ["s-a","s-b","s-c","s-d"];
+ids.forEach((id, k) => bindSlider(id, v => { M[k] = v; p.redraw(); }, v => v.toFixed(2)));
+document.querySelectorAll("[data-m]").forEach(btn => btn.onclick = () => {
+  btn.dataset.m.split(",").map(Number).forEach((v, k) => {
+    const el = document.getElementById(ids[k]);
+    el.value = v; el.dispatchEvent(new Event("input"));
+  });
+});
+
+renderQuiz("quiz", [
+  { q:"$\\det\\begin{bmatrix}1&2\\\\3&4\\end{bmatrix} = ?$",
+    opts:["$-2$","$2$","$10$","$-10$"], ans:0,
+    expl:"$ad - bc = 1\\cdot4 - 2\\cdot3 = -2$。負號代表這個變換會讓圖形翻面。" },
+  { q:"「逆時針旋轉 90°」的矩陣會把點 $(1, 0)$ 送到哪裡？",
+    opts:["$(0, 1)$","$(0, -1)$","$(-1, 0)$","$(1, 1)$"], ans:0,
+    expl:"旋轉矩陣 $\\begin{bmatrix}0&-1\\\\1&0\\end{bmatrix}$ 的第一行 $(0,1)$ 就是 $(1,0)$ 的去處 —— 按「旋轉 90°」看藍箭頭！" },
+  { q:"若 $\\det A = 0$，則下列何者正確？",
+    opts:["$A$ 是單位矩陣","$A$ 沒有反方陣","$A$ 是旋轉矩陣","$A$ 的每個元素都是 0"], ans:1,
+    expl:"$\\det = 0$ 時平面被壓成線或點，無法「還原」，所以反方陣不存在。" },
+], "matrix");
+</script>
+</body>
+</html>

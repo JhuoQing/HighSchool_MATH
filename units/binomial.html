@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>二項分布｜高中數學視覺實驗室</title>
+<meta name="theme-color" content="#0b101c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="../js/data.js"></script>
+<script src="../js/common.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, katexOpt)"></script>
+</head>
+<body>
+<main class="page">
+  <h1>🎯 二項分布</h1>
+  <p class="subtitle">重複做 $n$ 次成功率為 $p$ 的試驗，成功次數會怎麼分布？</p>
+
+  <div class="section">
+    <h2>實驗：調整 n 與 p</h2>
+    <p>每根長條是「恰好成功 $k$ 次」的機率 $P(X=k)$。紅線是期望值 $\mu = np$，亮色長條落在 $\mu\pm\sigma$ 範圍內。按「模擬」實際做實驗，白點是模擬出的頻率：</p>
+    <div class="lab">
+      <canvas id="c1"></canvas>
+      <div class="controls">
+        <div class="ctrl"><label for="s-n">試驗次數 n <b></b></label><input type="range" id="s-n" min="1" max="60" step="1" value="12"></div>
+        <div class="ctrl"><label for="s-p">成功機率 p <b></b></label><input type="range" id="s-p" min="0.02" max="0.98" step="0.01" value="0.5"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn primary" id="btn-sim">🎲 模擬 1000 回合</button>
+        <button class="btn" id="btn-clr">清除模擬</button>
+      </div>
+      <div class="readout" id="r1"></div>
+    </div>
+    <div class="note">$p = 0.5$ 時分布左右對稱；$p$ 偏小時峰值靠左、右邊拖尾巴。把 $n$ 拉大，形狀越來越像鐘形曲線 —— 這是常態分布的預告。</div>
+  </div>
+
+  <div class="section">
+    <h2>關鍵公式</h2>
+    <div class="formulas">
+      <div class="formula"><div class="name">二項分布機率</div><div class="math">$$P(X=k) = C^n_k\,p^k(1-p)^{n-k}$$</div></div>
+      <div class="formula"><div class="name">期望值</div><div class="math">$$E(X) = np$$</div></div>
+      <div class="formula"><div class="name">變異數與標準差</div><div class="math">$$\mathrm{Var}(X) = np(1-p),\qquad \sigma = \sqrt{np(1-p)}$$</div></div>
+      <div class="formula"><div class="name">幾何分布（首次成功在第 k 次）</div><div class="math">$$P(X=k) = (1-p)^{k-1}p,\qquad E(X) = \frac{1}{p}$$</div></div>
+    </div>
+  </div>
+
+  <div class="section"><h2>小測驗</h2><div id="quiz"></div></div>
+  <div class="unit-nav"></div>
+</main>
+<footer>高中數學視覺實驗室</footer>
+
+<script>
+injectNav(true);
+
+const p = new Plot(document.getElementById("c1"), { xmin:-1, xmax:13, ymin:0, ymax:0.3, heightPx:400 });
+let n = 12, pr = 0.5, sim = null;
+function pmf() {
+  // 以對數計算避免極端 p 時下溢
+  const out = [];
+  let logC = 0;
+  for (let k = 0; k <= n; k++) {
+    if (k > 0) logC += Math.log(n - k + 1) - Math.log(k);
+    out.push(Math.exp(logC + k * Math.log(pr) + (n - k) * Math.log(1 - pr)));
+  }
+  return out;
+}
+p.redraw = () => {
+  const P = pmf(), mx = Math.max(...P, sim ? Math.max(...sim) : 0);
+  p.xmin = -0.8; p.xmax = n + 0.8; p.ymin = -mx * 0.1; p.ymax = mx * 1.18;
+  p.clear();
+  const c = p.ctx, mu = n * pr, sd = Math.sqrt(n * pr * (1 - pr));
+  p.grid(n > 20 ? 5 : 1, mx / 5);
+  const col = cssVar("--curve1");
+  P.forEach((v, k) => {
+    const inside = Math.abs(k - mu) <= sd;
+    p.polygon([[k-0.4,0],[k+0.4,0],[k+0.4,v],[k-0.4,v]], col, inside ? 0.95 : 0.4);
+  });
+  p.line(p.xmin, 0, p.xmax, 0, cssVar("--axis"), 1.5);
+  p.line(mu, 0, mu, mx * 1.12, cssVar("--curve4"), 2.5, [6,4]);
+  p.text(mu, mx * 1.15, "μ", cssVar("--curve4"), null, "center");
+  if (sim) sim.forEach((v, k) => p.point(k, v, cssVar("--text"), 3.5));
+  // x 軸標籤
+  c.fillStyle = cssVar("--axis"); c.font = "11px 'JetBrains Mono', monospace"; c.textAlign = "center"; c.textBaseline = "top";
+  const step = n > 40 ? 10 : n > 20 ? 5 : n > 12 ? 2 : 1;
+  for (let k = 0; k <= n; k += step) c.fillText(k, p.px(k), p.py(0) + 5);
+  const mode = P.indexOf(Math.max(...P));
+  document.getElementById("r1").innerHTML =
+    `期望值 μ = np = <b>${mu.toFixed(2)}</b>　標準差 σ = √(np(1−p)) = <b>${sd.toFixed(3)}</b>　最可能的成功次數 = <b>${mode}</b>（機率 ${(P[mode]*100).toFixed(1)}%）`;
+};
+bindSlider("s-n", v => { n = v; sim = null; p.redraw(); });
+bindSlider("s-p", v => { pr = v; sim = null; p.redraw(); }, v => v.toFixed(2));
+document.getElementById("btn-sim").onclick = () => {
+  const cnt = new Array(n + 1).fill(0);
+  for (let t = 0; t < 1000; t++) { let s = 0; for (let i = 0; i < n; i++) if (Math.random() < pr) s++; cnt[s]++; }
+  sim = cnt.map(v => v / 1000); p.redraw();
+};
+document.getElementById("btn-clr").onclick = () => { sim = null; p.redraw(); };
+
+renderQuiz("quiz", [
+  { q:"擲一枚公平硬幣 10 次，正面次數的期望值是？",
+    opts:["$2.5$","$5$","$10$","$0.5$"], ans:1,
+    expl:"$E(X) = np = 10\\times0.5 = 5$。" },
+  { q:"$X\\sim B(100,\\,0.2)$，則標準差 $\\sigma = ?$",
+    opts:["$4$","$16$","$20$","$\\sqrt{20}$"], ans:0,
+    expl:"$\\sigma = \\sqrt{np(1-p)} = \\sqrt{100\\times0.2\\times0.8} = \\sqrt{16} = 4$。" },
+  { q:"擲公平硬幣 3 次，恰好出現 2 次正面的機率是？",
+    opts:["$\\frac{1}{4}$","$\\frac{3}{8}$","$\\frac{1}{2}$","$\\frac{2}{3}$"], ans:1,
+    expl:"$C^3_2\\left(\\frac12\\right)^2\\left(\\frac12\\right)^1 = 3\\times\\frac18 = \\frac38$。" },
+], "binomial");
+</script>
+</body>
+</html>
